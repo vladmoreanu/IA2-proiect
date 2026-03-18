@@ -1,0 +1,9 @@
+{
+    "workbench.editorAssociations": {
+        "{hexdiff}:/**/*.*": "hexEditor.hexedit",
+        "file:/**/*.csv": "jupyter-data-wrangler"
+    },
+    "latex-workshop.latex.outDir": "%WORKSPACE_FOLDER%/latex/%DOCFILE%",
+    "latex-workshop.latex.auxDir": "%OUTDIR%",
+    "jupyter.notebookFileRoot": "${workspaceFolder}",
+}

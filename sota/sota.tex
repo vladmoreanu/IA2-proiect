@@ -1,0 +1,71 @@
+%===================================================================================================
+% PREAMBLE
+%===================================================================================================
+\documentclass[a4paper, landscape]{article}
+
+\usepackage[margin=0.5in]{geometry}
+\usepackage{cite}
+\usepackage{tabularx}
+\usepackage{xltabular}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=3.5mm}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    allcolors=cyan
+}
+
+\newcommand{\subs}{\textsubscript}
+\newcommand{\sups}{\textsuperscript}
+
+% tabularx mods
+\renewcommand\tabularxcolumn[1]{m{#1}} % universal vertical centering
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X} % alignment and equal width columns
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}m{#1}} % alignment and fixed width columns
+
+%===================================================================================================
+% CONTENT
+%===================================================================================================
+
+\begin{document}
+\pagenumbering{gobble}
+
+%===================================================================================================
+% TABLE
+%===================================================================================================
+
+\begin{xltabular}{\textwidth}{ R{8mm} R{30mm} Y Y Y Y }
+
+\textbf{Link} &
+\textbf{Datasets} &
+\textbf{Models Used} &
+\textbf{Model Details} &
+\textbf{Methodology Details} &
+\textbf{Best Results} \\
+
+\hline\hline
+\endfirsthead
+
+\textbf{Link} &
+\textbf{Datasets} &
+\textbf{Models Used} &
+\textbf{Model Details} &
+\textbf{Methodology Details} &
+\textbf{Best Results} \\
+\hline\hline
+\endhead
+
+%===================================================================================================
+
+%===================================================================================================
+\end{xltabular}
+
+%===================================================================================================
+% REFERENCES
+%===================================================================================================
+
+% \bibliography{bib/main}
+% \bibliographystyle{IEEEtran}
+
+\end{document}
+
