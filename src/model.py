@@ -1,7 +1,7 @@
-import torch
+import api
+import torch.nn as nn
 
-
-class DnCNN(torch.nn.Module):
+class DnCNN(api.base.Model):
     def __init__(self, channels=3, num_of_layers=17):
         super(DnCNN, self).__init__()
         kernel_size = 3
@@ -9,20 +9,20 @@ class DnCNN(torch.nn.Module):
         features = 64
         layers = []
 
-        layers.append(torch.nn.Conv2d(in_channels=channels, out_channels=features,
+        layers.append(nn.Conv2d(in_channels=channels, out_channels=features,
                                       kernel_size=kernel_size, padding=padding, bias=False))
-        layers.append(torch.nn.ReLU(inplace=True))
+        layers.append(nn.ReLU(inplace=True))
 
         for _ in range(num_of_layers - 2):
-            layers.append(torch.nn.Conv2d(in_channels=features, out_channels=features,
+            layers.append(nn.Conv2d(in_channels=features, out_channels=features,
                                           kernel_size=kernel_size, padding=padding, bias=False))
-            layers.append(torch.nn.BatchNorm2d(features))
-            layers.append(torch.nn.ReLU(inplace=True))
+            layers.append(nn.BatchNorm2d(features))
+            layers.append(nn.ReLU(inplace=True))
 
-        layers.append(torch.nn.Conv2d(in_channels=features, out_channels=channels,
+        layers.append(nn.Conv2d(in_channels=features, out_channels=channels,
                                       kernel_size=kernel_size, padding=padding, bias=False))
 
-        self.dncnn = torch.nn.Sequential(*layers)
+        self.dncnn = nn.Sequential(*layers)
 
     def forward(self, x):
         out = self.dncnn(x)

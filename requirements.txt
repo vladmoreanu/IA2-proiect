@@ -13,4 +13,4 @@ scipy==1.15.2
 torch==2.0.1
 torchsummary==1.5.1
 tqdm==4.67.1
-opencv-python~=4.13.0.92
+opencv-python==4.8.1.78
