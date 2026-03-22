@@ -1,0 +1,167 @@
+# %%
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+from xor_dataset import create_xor_dataset
+
+x, y = create_xor_dataset(num_samples_per_class=400, noise=0.25)
+
+x0 = x[y == 0, :]
+x1 = x[y == 1, :]
+
+print(x.shape, y.shape)
+
+plt.figure()
+plt.scatter(x0[:, 0], x0[:, 1], c="red",label=r"$b_0 \oplus b_1$ = 0")
+plt.scatter(x1[:, 0], x1[:, 1], c="green", label=r"$b_0 \oplus b_1$ = 1")
+plt.xlabel("b0")
+plt.ylabel("b1")
+plt.legend()
+
+x_train, x_test, y_train, y_test = train_test_split(
+    x,
+    y,
+    test_size=0.2,
+    random_state=33
+    )
+
+print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
+print(np.unique(y_train, return_counts=True))
+print(np.unique(y_test, return_counts=True))
+
+from torch import FloatTensor, LongTensor
+from torch.utils.data import TensorDataset, DataLoader
+
+train_dataset = TensorDataset(
+    FloatTensor(x_train), 
+    LongTensor(y_train)
+    )
+test_dataset = TensorDataset(
+    FloatTensor(x_test), 
+    LongTensor(y_test)
+    )
+
+print("Train/Test elements: ", len(train_dataset), len(test_dataset))
+
+
+# %%
+import torch
+
+import importlib
+import lighter
+importlib.reload(lighter)
+
+class Accuracy(lighter.metrics.Metric):
+    def __init__(self):
+        self.name = 'acc'
+
+    def reset(self):
+        self.correct_predictions = 0
+        self.total_samples = 0
+
+    def update(self, targets, outputs):
+        _, predicted = torch.max(outputs, 1)
+        self.correct_predictions += (predicted == targets).sum().item()
+        self.total_samples += targets.size(0)
+
+    def result(self):
+        return (self.correct_predictions / self.total_samples) \
+            if self.total_samples > 0 else None
+
+
+class History(lighter.callbacks.Callback):
+    def report(self, training=False):
+        prefix = 'train' if training else 'val'
+        out_str = '\t'
+        for metric in self._model.metrics:
+            x = metric.result()
+            x = f'{x:.3f}' if x > 0.01 else f'{x:.2e}'
+            out_str += ' {:s}_{:s}={:s}'.format(prefix, metric.name, x)
+        print(out_str)
+
+    def on_epoch_begin(self, epoch, logs=None):
+        print(f"Epoch {epoch+1}/{self.params['epochs']}:")
+
+    def on_epoch_end(self, epoch, logs=None):
+        out_str = '\t'
+        for k, v in logs.items():
+            v = f'{v:.3f}' if v > 0.01 else f'{v:.2e}'
+            out_str += ' {:s}={:s}'.format(k, v)
+        print(out_str)
+
+
+class FFN(lighter.Model):
+    def __init__(self, input_size, hidden_size, output_size):
+        super().__init__()
+
+        self.activation = torch.nn.Sigmoid()
+        
+        self.fc1 = torch.nn.Linear(input_size, hidden_size)
+        self.fc2 = torch.nn.Linear(hidden_size, hidden_size)
+        self.fc3 = torch.nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.activation(x)
+        x = self.fc2(x)
+        x = self.activation(x)
+        x = self.fc3(x)
+        return x
+
+
+input_size  = 2
+hidden_size = 128
+output_size = 2
+
+epochs = 1000
+learning_rate = 1e-3
+
+batch_size = 128
+
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+model = FFN(input_size, hidden_size, output_size)
+
+model.compile(
+    torch.optim.Adam(model.parameters(), lr=learning_rate),
+    torch.nn.CrossEntropyLoss(),
+    metrics=[
+        Accuracy()
+    ]
+    )
+
+train_l, test_l = model.fit(
+    train_loader,
+    epochs,
+    validation_loader=val_loader,
+    validation_freq=50,
+    callbacks=[
+        History()
+    ]
+    )
+
+
+# %%
+import importlib
+import lighter
+importlib.reload(lighter)
+
+lighter.utils.plot_decision_boundary(model, train_loader)
+lighter.utils.plot_decision_boundary(model, val_loader)
+lighter.utils.plot_loss(train_l, test_l, title='Model Losses')
+
+
+# %%
+x_test_tensor = torch.FloatTensor(x_test)
+y_test_tensor = torch.FloatTensor(y_test)
+
+y_pred_tensor = model(x_test_tensor)
+
+yy, predicted = torch.max(y_pred_tensor, 1)
+
+(y_test_tensor == predicted).sum().item() / len(y_test_tensor)
+
+
+
