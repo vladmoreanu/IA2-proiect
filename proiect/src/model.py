@@ -1,5 +1,6 @@
-import lighter
+from lighter import lighter
 import torch
+
 
 class DnCNN(lighter.Model):
     def __init__(self, channels=3, num_of_layers=17):
@@ -25,4 +26,5 @@ class DnCNN(lighter.Model):
         self.dncnn = torch.nn.Sequential(*layers)
 
     def forward(self, x):
-        return self.dncnn(x)
+        noise_res = self.dncnn(x)
+        return x - noise_res
