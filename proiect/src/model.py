@@ -1,4 +1,4 @@
-from lighter import lighter
+import lighter
 import torch
 
 

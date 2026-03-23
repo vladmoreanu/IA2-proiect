@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 import random
 
-path_normal = r"E:\baze de date\Flickr2K\normal_images"
-path_noise = r"E:\baze de date\Flickr2K\noise_images"
+path_normal = r"./DATASETS/Flickr2K/normal_images"
+path_noise = r"./DATASETS/Flickr2K/noise_images"
 
 # Dataset link: https://www.kaggle.com/datasets/daehoyang/flickr2k
 
