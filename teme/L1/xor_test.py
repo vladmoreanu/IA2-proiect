@@ -18,6 +18,7 @@ plt.scatter(x1[:, 0], x1[:, 1], c="green", label=r"$b_0 \oplus b_1$ = 1")
 plt.xlabel("b0")
 plt.ylabel("b1")
 plt.legend()
+plt.show()
 
 x_train, x_test, y_train, y_test = train_test_split(
     x,
@@ -52,6 +53,13 @@ import importlib
 import lighter
 importlib.reload(lighter)
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f'System :')
+print(f'  PyTorch version: {torch.__version__}')
+print(f'  CUDA available: {torch.cuda.is_available()}')
+print(f'  CUDA version PyTorch expects: {torch.version.cuda}')
+print(f'  Using device: {device}, {torch.device(device)}')
+
 class Accuracy(lighter.metrics.Metric):
     def __init__(self):
         self.name = 'acc'
@@ -68,28 +76,6 @@ class Accuracy(lighter.metrics.Metric):
     def result(self):
         return (self.correct_predictions / self.total_samples) \
             if self.total_samples > 0 else None
-
-
-class History(lighter.callbacks.Callback):
-    def report(self, training=False):
-        prefix = 'train' if training else 'val'
-        out_str = '\t'
-        for metric in self._model.metrics:
-            x = metric.result()
-            x = f'{x:.3f}' if x > 0.01 else f'{x:.2e}'
-            out_str += ' {:s}_{:s}={:s}'.format(prefix, metric.name, x)
-        print(out_str)
-
-    def on_epoch_begin(self, epoch, logs=None):
-        print(f"Epoch {epoch+1}/{self.params['epochs']}:")
-
-    def on_epoch_end(self, epoch, logs=None):
-        out_str = '\t'
-        for k, v in logs.items():
-            v = f'{v:.3f}' if v > 0.01 else f'{v:.2e}'
-            out_str += ' {:s}={:s}'.format(k, v)
-        print(out_str)
-
 
 class FFN(lighter.Model):
     def __init__(self, input_size, hidden_size, output_size):
@@ -114,10 +100,10 @@ input_size  = 2
 hidden_size = 128
 output_size = 2
 
-epochs = 1000
+epochs = 50
 learning_rate = 1e-3
 
-batch_size = 128
+batch_size = 32
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
@@ -130,17 +116,18 @@ model.compile(
     metrics=[
         Accuracy()
     ]
-    )
+)
 
 train_l, test_l = model.fit(
     train_loader,
     epochs,
     validation_loader=val_loader,
-    validation_freq=50,
+    validation_freq=5,
     callbacks=[
-        History()
+        lighter.callbacks.History(),
+        lighter.callbacks.Checkpoint('./checkpoints/xor_test.pt'),
     ]
-    )
+)
 
 
 # %%
