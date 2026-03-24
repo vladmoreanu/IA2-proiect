@@ -1,24 +1,70 @@
-from lighter.callbacks import Callback
+from lighter.callbacks import MonitorCallback
 
 import torch
 
-class Checkpoint(Callback):
+class Checkpoint(MonitorCallback):
     def __init__(
         self,
         filepath,
-        # monitor="val_loss",
+        monitor="val_loss",
         # verbose=0,
-        # save_best_only=False,
+        save_best_only=False,
         # save_weights_only=False,
-        # mode="auto",
+        mode="auto",
         # save_freq="epoch",
-        # initial_value_threshold=None,
+        initial_value_threshold=None,
     ):
-        super().__init__()
-        self.filepath = filepath
+        '''
+        Save the model
+
+        `filepath` may contain placeholders such as
+        `{epoch:02d}`,`{batch:02d}` and `{loss:.2f}`. A mismatch between
+        logged metrics and the path's placeholders can cause formatting to
+        fail.
+        '''
+        super().__init__(monitor, mode, initial_value_threshold)
+
+        self.filepath       = filepath
+        self.save_best_only = save_best_only
 
     def on_epoch_end(self, epoch, logs=None):
-        self._save_model()
+        if self._should_save(logs):
+            self._save_model(epoch=epoch, batch=None, logs=logs)
 
-    def _save_model(self):
-        torch.save(self._model.state_dict(), self.filepath)
+    def _should_save(self, logs):
+        logs = logs or {}
+        if self.save_best_only:
+            current = logs.get(self.monitor)
+            if current is None:
+                # Something is absolutely fishy if this is the case
+                return True
+            if self._is_improvement(current, self.best):
+                self.best = current
+                return True
+            else:
+                return False
+        else:
+            return True
+        
+    def _save_model(self, epoch, batch, logs):
+        filepath = self._get_file_path(epoch, batch, logs)
+        torch.save(self._model.state_dict(), filepath)
+
+    def _get_file_path(self, epoch, batch, logs):
+        try:
+            # `filepath` may contain placeholders such as
+            # `{epoch:02d}`,`{batch:02d}` and `{mape:.2f}`. A mismatch between
+            # logged metrics and the path's placeholders can cause formatting to
+            # fail.
+            if batch is None or "batch" in logs:
+                file_path = self.filepath.format(epoch=epoch + 1, **logs)
+            else:
+                file_path = self.filepath.format(
+                    epoch=epoch + 1, batch=batch + 1, **logs
+                )
+        except KeyError as e:
+            raise KeyError(
+                f'Failed to format this callback filepath: "{self.filepath}". '
+                f"Reason: {e}"
+            )
+        return file_path
