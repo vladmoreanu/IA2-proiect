@@ -1,6 +1,5 @@
 from .metrics import Metric, Loss
 from .callbacks import CallbackList
-from tqdm import tqdm
 
 import torch
 
@@ -44,11 +43,12 @@ class Model(torch.nn.Module):
         :param dataloader: torch.utils.data.DataLoader object to iterate over
         """
         self.train() if training else self.eval()
+        pfx = 'train_' if training else 'val_'
 
         for metric in self.metrics:
             metric.reset()
 
-        for idx, (inputs, targets) in enumerate(data_loader): # tqdm(data_loader):
+        for idx, (inputs, targets) in enumerate(data_loader):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
 
             # Forward pass
@@ -61,16 +61,12 @@ class Model(torch.nn.Module):
                 loss.backward()
                 self.optimizer.step()
                 
-                self.callbacks.on_train_batch_end(idx)
-            
             else:
                 self.callbacks.on_val_batch_begin(idx)
 
                 with torch.no_grad():
                     outputs = self(inputs)
                     loss = self.loss_fn(outputs, targets)
-
-                self.callbacks.on_val_batch_end(idx)
 
             # Metrics update state
             for metric in self.metrics:
@@ -79,8 +75,14 @@ class Model(torch.nn.Module):
                 else:
                     metric.update(targets, outputs)
 
-        pfx = 'train_' if training else 'val_'
-        # Create and return the log (metrics) of this step
+            # Create the log (metrics) of this batch
+            batch_log = { (pfx + x.name):x.result() for x in self.metrics }
+            if training:
+                self.callbacks.on_train_batch_end(idx, batch_log)
+            else:
+                self.callbacks.on_val_batch_end(idx, batch_log)
+
+        # Create and return the log (metrics) of this epoch
         return { (pfx + x.name):x.result() for x in self.metrics }
 
     def fit(
@@ -103,10 +105,16 @@ class Model(torch.nn.Module):
         """
         Train loop.
         """
-        # best_loss = torch.inf
         self.to(self.device)
 
-        self.callbacks = CallbackList(callbacks, self, epochs=epochs)
+        self.callbacks = CallbackList(
+            callbacks,
+            self,
+            train_loader    = train_loader,
+            epochs          = epochs,
+            val_loader      = validation_loader,
+            val_freq        = validation_freq,
+        )
 
         self.callbacks.on_train_begin()
 
@@ -125,8 +133,7 @@ class Model(torch.nn.Module):
 
             self.callbacks.on_epoch_end(e, train_log | val_log)
 
-        final_log = train_log | val_log
-        self.callbacks.on_train_end(final_log)
+        self.callbacks.on_train_end(train_log | val_log)
 
         if validation_loader:
             return train_losses, val_losses

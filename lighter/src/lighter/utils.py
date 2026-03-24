@@ -4,16 +4,24 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
 def plot_loss(train, val, *, log=False, title=None):
+    xAxis = np.arange(1, len(train)+1)
     plt.figure()
-    
     plt.ylabel('Loss')
     plt.xlabel('Epochs')
     
     if title:
         plt.title(title)
 
-    plt.plot(train, label='Train Losses')
-    plt.plot(val, label='Val Losses')
+    plt.plot(
+        xAxis,
+        train,
+        label='Train Losses'
+        )
+    plt.plot(
+        xAxis,
+        val,
+        label='Val Losses'
+        )
 
     if log :
         plt.yscale('log')
