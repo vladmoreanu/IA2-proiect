@@ -10,7 +10,7 @@ class CallbackList(Callback):
         self.callbacks = callbacks
 
         if not model:
-            raise TypeError('A model must be provided')
+            raise ValueError('A model must be provided')
         super().set_model(model)
         for callback in self.callbacks:
             callback.set_model(model)
