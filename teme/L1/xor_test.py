@@ -12,13 +12,13 @@ x1 = x[y == 1, :]
 
 print(x.shape, y.shape)
 
-plt.figure()
-plt.scatter(x0[:, 0], x0[:, 1], c="red",label=r"$b_0 \oplus b_1$ = 0")
-plt.scatter(x1[:, 0], x1[:, 1], c="green", label=r"$b_0 \oplus b_1$ = 1")
-plt.xlabel("b0")
-plt.ylabel("b1")
-plt.legend()
-plt.show()
+# plt.figure()
+# plt.scatter(x0[:, 0], x0[:, 1], c="red",label=r"$b_0 \oplus b_1$ = 0")
+# plt.scatter(x1[:, 0], x1[:, 1], c="green", label=r"$b_0 \oplus b_1$ = 1")
+# plt.xlabel("b0")
+# plt.ylabel("b1")
+# plt.legend()
+# plt.show()
 
 x_train, x_test, y_train, y_test = train_test_split(
     x,
@@ -100,7 +100,7 @@ input_size  = 2
 hidden_size = 128
 output_size = 2
 
-epochs = 50
+epochs = 1000
 learning_rate = 1e-3
 
 batch_size = 32
@@ -118,6 +118,7 @@ model.compile(
     ]
 )
 
+
 train_l, test_l = model.fit(
     train_loader,
     epochs,
@@ -125,30 +126,33 @@ train_l, test_l = model.fit(
     validation_freq=5,
     callbacks=[
         lighter.callbacks.History(),
-        lighter.callbacks.Checkpoint('./checkpoints/xor_test.pt'),
+        lighter.callbacks.Checkpoint(
+            './checkpoints/xor_test_{epoch}.pt',
+            save_best_only=True
+        ),
     ]
 )
 
 
 # %%
-import importlib
-import lighter
-importlib.reload(lighter)
+# import importlib
+# import lighter
+# importlib.reload(lighter)
 
-lighter.utils.plot_decision_boundary(model, train_loader)
-lighter.utils.plot_decision_boundary(model, val_loader)
-lighter.utils.plot_loss(train_l, test_l, title='Model Losses')
+# lighter.utils.plot_decision_boundary(model, train_loader)
+# lighter.utils.plot_decision_boundary(model, val_loader)
+# lighter.utils.plot_loss(train_l, test_l, title='Model Losses')
 
 
 # %%
-x_test_tensor = torch.FloatTensor(x_test)
-y_test_tensor = torch.FloatTensor(y_test)
+# x_test_tensor = torch.FloatTensor(x_test)
+# y_test_tensor = torch.FloatTensor(y_test)
 
-y_pred_tensor = model(x_test_tensor)
+# y_pred_tensor = model(x_test_tensor)
 
-yy, predicted = torch.max(y_pred_tensor, 1)
+# yy, predicted = torch.max(y_pred_tensor, 1)
 
-(y_test_tensor == predicted).sum().item() / len(y_test_tensor)
+# (y_test_tensor == predicted).sum().item() / len(y_test_tensor)
 
 
 
