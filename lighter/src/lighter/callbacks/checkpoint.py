@@ -1,6 +1,7 @@
 from lighter.callbacks import MonitorCallback
 
 import torch
+import os
 
 class Checkpoint(MonitorCallback):
     def __init__(
@@ -48,6 +49,9 @@ class Checkpoint(MonitorCallback):
         
     def _save_model(self, epoch, batch, logs):
         filepath = self._get_file_path(epoch, batch, logs)
+        output_dir, _ = os.path.split(filepath)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
         torch.save(self._model.state_dict(), filepath)
 
     def _get_file_path(self, epoch, batch, logs):
