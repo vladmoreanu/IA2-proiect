@@ -8,8 +8,8 @@ from torch.utils.data import DataLoader, random_split
 # path_clean = r'./DATASETS/Flickr2K/normal_images'
 # path_noisy = r'./DATASETS/Flickr2K/noise_images'
 
-path_clean = r"E:\baze de date\Flickr2K\normal_images"
-path_noisy = r"E:\baze de date\Flickr2K\noise_images"
+path_clean = r"E:\baze de date\Flickr2K\normal_images_tiles"
+path_noisy = r"E:\baze de date\Flickr2K\noise_images_tiles"
 
 
 if __name__ == '__main__':
@@ -18,7 +18,6 @@ if __name__ == '__main__':
     num_of_layers = 17  # 9  # default 17
     epochs = 20
     learning_rt = 1e-3
-    patch_size = 16  # 16  # default 128
 
     num_workers = 4
     prefetch_factor = 6
@@ -32,8 +31,7 @@ if __name__ == '__main__':
 
     dataset = ImageDataset(
         noisy_dir=path_noisy,
-        clean_dir=path_clean,
-        patch_size=patch_size
+        clean_dir=path_clean
     )
 
     train_size = int(len(dataset) * train_split)
