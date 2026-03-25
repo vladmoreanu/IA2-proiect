@@ -3,7 +3,7 @@ from dataset import ImageDataset
 
 import lighter
 import torch
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, RandomSampler
 
 # path_clean = r'./DATASETS/Flickr2K/normal_images'
 # path_noisy = r'./DATASETS/Flickr2K/noise_images'
@@ -14,7 +14,7 @@ path_noisy = r"E:\baze de date\Flickr2K\noise_images_tiles"
 
 if __name__ == '__main__':
     batch_size = 16
-    train_split = 0.8
+    train_split = 0.95
     num_of_layers = 17  # 9  # default 17
     epochs = 20
     learning_rt = 1e-3
@@ -43,10 +43,12 @@ if __name__ == '__main__':
         generator=torch.Generator().manual_seed(42)  # same split across different runs
     )
 
+    sampler = RandomSampler(train_dataset, num_samples=1600, replacement=False)
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        sampler=sampler,
         num_workers=num_workers,
         prefetch_factor=prefetch_factor,
         pin_memory_device=device,
