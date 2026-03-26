@@ -1,5 +1,17 @@
-
 class Callback():
+    '''
+    Base class
+
+    Provides interface:
+    - on_epoch_begin
+    - on_epoch_end
+    - on_train_batch_begin
+    - on_train_batch_end
+    - on_val_batch_begin
+    - on_val_batch_end
+    - on_predict_batch_begin
+    - on_predict_batch_end
+    '''
     def __init__(self):
         self.params = None
         self._model = None

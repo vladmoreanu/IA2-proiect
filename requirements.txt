@@ -15,4 +15,5 @@ torchsummary==1.5.1
 tqdm==4.67.1
 opencv-python==4.8.1.78
 torchvision==0.15.2
+toml==0.10.2
 -e file:./lighter/

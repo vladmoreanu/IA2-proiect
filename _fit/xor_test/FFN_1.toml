@@ -1,0 +1,19 @@
+[cross-validation]
+n_splits            = 5
+shuffle             = true
+random_state        = 32
+
+[dataloader]
+batch_size          = 8
+
+[model]
+input_size          = 2
+hidden_size         = 128
+output_size         = 2
+
+[optimizer]
+lr                  = 1e-3
+
+[fit]
+epochs              = 200
+# validation_freq     = 5

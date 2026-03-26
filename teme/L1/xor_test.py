@@ -7,19 +7,6 @@ from xor_dataset import create_xor_dataset
 
 x, y = create_xor_dataset(num_samples_per_class=400, noise=0.25)
 
-x0 = x[y == 0, :]
-x1 = x[y == 1, :]
-
-print(x.shape, y.shape)
-
-# plt.figure()
-# plt.scatter(x0[:, 0], x0[:, 1], c="red",label=r"$b_0 \oplus b_1$ = 0")
-# plt.scatter(x1[:, 0], x1[:, 1], c="green", label=r"$b_0 \oplus b_1$ = 1")
-# plt.xlabel("b0")
-# plt.ylabel("b1")
-# plt.legend()
-# plt.show()
-
 x_train, x_test, y_train, y_test = train_test_split(
     x,
     y,

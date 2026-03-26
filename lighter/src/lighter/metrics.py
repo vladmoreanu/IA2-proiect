@@ -1,6 +1,14 @@
 import torch
 
 class Metric:
+    '''
+    Base class
+
+    Provides interface:
+    - reset
+    - update
+    - result
+    '''
     def __init__(self):
         self.name = 'unnamed_metric'
 
@@ -24,6 +32,7 @@ class Metric:
         Called at the end of every epoch.
         '''
         return None
+
 
 class Loss(Metric):
     def __init__(self):
