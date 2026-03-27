@@ -3,8 +3,10 @@ from dataset import ImageDataset
 
 import lighter
 
+import toml
+
 import torch
-from torch.utils.data import DataLoader, random_split, RandomSampler
+from torch.utils.data import DataLoader, RandomSampler
 
 from sklearn.model_selection import GroupKFold
 
@@ -15,6 +17,26 @@ import os
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
+
+from datetime import datetime
+
+class csvLogger(lighter.callbacks.Callback):
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+    
+    def on_epoch_end(self, epoch, logs=None):
+        log = {}
+        for k, v in logs.items():
+            log[k] = [v]
+        df = pd.DataFrame(log)
+        df.to_csv(
+            self.path,
+            mode='a',
+            header=not os.path.exists(self.path),
+            index=False,
+        )
+
 
 class ImageDataset(Dataset):
     def __init__(self, noisy_filenames, clean_filenames, noisy_dir, clean_dir):
@@ -39,99 +61,91 @@ class ImageDataset(Dataset):
         return self.transform(noisy_img), self.transform(clean_img)
 
 
-path_clean = r'./DATASETS/Flickr2K/normal_images_tiles'
-path_noisy = r'./DATASETS/Flickr2K/noise_images_tiles'
+def main():
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'System :')
+    print(f'  PyTorch version: {torch.__version__}')
+    print(f'  CUDA available: {torch.cuda.is_available()}')
+    print(f'  CUDA version PyTorch expects: {torch.version.cuda}')
+    print(f'  Using device: {device}')
 
-num_of_layers = 17  # 9  # default 17
+    path_clean = r'./DATASETS/Flickr2K/normal_images_tiles'
+    path_noisy = r'./DATASETS/Flickr2K/noise_images_tiles'
+    noisy_filenames = np.array(sorted(os.listdir(path_clean)))
+    clean_filenames = np.array(sorted(os.listdir(path_noisy)))
+    groups = []
+    for x in clean_filenames:
+        groups.append(int(x[:6]))
 
-# train_split = 0.95
-batch_size = 16
-num_workers = 4
-prefetch_factor = 6
+    l = len(clean_filenames) / 100
+    clean_filenames = clean_filenames[:l]
+    noisy_filenames = noisy_filenames[:l]
 
-learning_rt = 1e-3
+    # change working dir to...
+    root = '_fit/proiect/'
+    # if not os.path.exists(root):
+    #     os.makedirs(root)
+    os.chdir(root)
 
-epochs = 20
+    config = toml.load('DnCNN_0.toml')
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f'System :')
-print(f'  PyTorch version: {torch.__version__}')
-print(f'  CUDA available: {torch.cuda.is_available()}')
-print(f'  CUDA version PyTorch expects: {torch.version.cuda}')
-print(f'  Using device: {device}, {torch.device(device)}')
+    gkfGen = GroupKFold(**config['cross-validation'])
 
-noisy_filenames = np.array(sorted(os.listdir(path_clean)))
-clean_filenames = np.array(sorted(os.listdir(path_noisy)))
-groups = []
-for x in clean_filenames:
-    groups.append(int(x[:6]))
+    for fold, (train_split, val_split) in enumerate(gkfGen.split(
+        noisy_filenames, clean_filenames, groups
+    )):
+        train_dataset = ImageDataset(
+            noisy_filenames[train_split],
+            clean_filenames[train_split],
+            path_noisy,
+            path_clean
+        )
 
-gkfGen = GroupKFold(n_splits=5, shuffle=False)
+        val_dataset = ImageDataset(
+            noisy_filenames[val_split],
+            clean_filenames[val_split],
+            path_noisy,
+            path_clean
+        )
 
-for fold, (train_split, val_split) in enumerate(gkfGen.split(
-    noisy_filenames, clean_filenames, groups
-)):
-    train_dataset = ImageDataset(
-        noisy_filenames[train_split],
-        clean_filenames[train_split],
-        path_noisy,
-        path_clean
-    )
+        train_loader = DataLoader(train_dataset, **config['dataloader'])
 
-    val_dataset = ImageDataset(
-        noisy_filenames[val_split],
-        clean_filenames[val_split],
-        path_noisy,
-        path_clean
-    )
+        val_loader   = DataLoader(val_dataset, **config['dataloader'])
 
-    # sampler = RandomSampler(train_dataset, num_samples=1600, replacement=False)
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        # sampler=sampler,
-        num_workers=num_workers,
-        prefetch_factor=prefetch_factor,
-        pin_memory_device=device,
-        pin_memory=True,
-        persistent_workers=True
-    )
-    val_loader   = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        prefetch_factor=prefetch_factor,
-        pin_memory_device=device,
-        pin_memory=True,
-        persistent_workers=True
-    )
+        model = DnCNN(**config['model'])
 
-    model = DnCNN(num_of_layers=num_of_layers)
+        model.compile(
+            torch.optim.Adam(model.parameters(), **config['optimizer']),
+            torch.nn.CrossEntropyLoss(),
+            metrics=[
+                lighter.metrics.PSNR()
+            ],
+            device=device,
+        )
 
-    model.compile(
-        torch.optim.Adam(model.parameters(), lr=learning_rt),
-        torch.nn.MSELoss(),
-        metrics=[lighter.metrics.PSNR()],
-        device=device
-    )
+        today = datetime.now().date()
+        checkpointPath = 'DnCNN_0/model_{time}_f{fold}.pt'.format(
+            fold=fold,
+            time=today,
+            )
 
-    checkpointPath = './checkpoints/DnCNN_{fold}.pt'.format(fold=fold)
+        logsPath = 'DnCNN_0_logs_{time}_f{fold}.csv'.format(
+            fold=fold,
+            time=today,
+            )
 
-    train_l, test_l = model.fit(
-        train_loader,
-        epochs=epochs,
-        validation_loader=val_loader,
-        validation_freq=10,
-        callbacks=[
-            lighter.callbacks.History(),
-            lighter.callbacks.Checkpoint(
-                checkpointPath, save_best_only=True,
-                ),
-        ]
-    )
+        train_l, test_l = model.fit(
+            train_loader,
+            validation_loader=val_loader,
+            callbacks=[
+                csvLogger(logsPath),
+                lighter.callbacks.History(),
+                lighter.callbacks.Checkpoint(
+                    checkpointPath, save_best_only=True,
+                    ),
+            ],
+            **config['fit'],
+        )
 
-    data = { 'train_l': train_l, 'test_l': test_l }
-    df = pd.DataFrame(data)
-    df.to_csv('./results/DnCNN_{fold}.csv'.format(fold=fold), index=False)
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,29 @@
+[cross-validation]
+n_splits    = 5
+# shuffle     = false
+# random_state = None
+
+# [model]
+# num_of_layers       = 17
+
+# torch.nn.DataLoader(...)
+[dataloader]
+batch_size          = 16
+shuffle             = true
+# sampler             = None # Can't be implemented here
+# batch_sampler       = None # Can't be implemented here
+num_workers         = 2
+# collate_fn          = None # Can't be implemented here
+pin_memory          = true
+drop_last           = false
+timeout             = 0
+# worker_init_fn      = None # Can't be implemented here
+prefetch_factor     = 4
+
+# torch
+[optimizer]
+learning_rt = 1e-3
+
+# our fit method
+[fit]
+epochs = 20

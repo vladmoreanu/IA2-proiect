@@ -31,6 +31,8 @@ class Model(torch.nn.Module):
         self.loss_fn    = loss
         self.metrics    = [Loss()] + metrics
         self.device     = device
+        
+        self.to(self.device)
 
     def step(
         self,
@@ -140,3 +142,65 @@ class Model(torch.nn.Module):
         else:
             return train_losses
         
+    def evaluate(
+        self,
+        data_loader=None,
+        # batch_size=None,
+        # verbose="auto",
+        # sample_weight=None,
+        # steps=None,
+        callbacks=None,
+        # return_dict=False,
+    ):
+        self.to(self.device)
+
+        self.callbacks = CallbackList(
+            callbacks,
+            self,
+            data_loader = data_loader,
+        )
+
+        self.callbacks.on_val_begin()
+
+        val_losses = []
+
+        val_log = self.step(data_loader)
+        val_losses.append(val_log['val_loss'])
+
+        self.callbacks.on_val_end(val_log)
+
+        return val_losses
+
+    def predict(
+        self,
+        data_loader,
+        # batch_size=None,
+        # verbose="auto",
+        # steps=None,
+        callbacks=None
+    ):
+        self.to(self.device)
+
+        self.callbacks = CallbackList(
+            callbacks,
+            self,
+            data_loader = data_loader,
+        )
+
+        self.eval()
+
+        self.callbacks.on_predict_begin()
+
+        for idx, inputs in enumerate(data_loader):
+            inputs = inputs.to(self.device)
+
+            self.callbacks.on_predict_batch_begin(idx)
+
+            with torch.no_grad():
+                outputs = self(inputs)
+
+            self.callbacks.on_predict_batch_end(idx)
+
+        self.callbacks.on_predict_end()
+
+        return outputs
