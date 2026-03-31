@@ -17,17 +17,18 @@ def plot_loss(train, val, *, log=False, title=None):
         train,
         label='Train Losses'
         )
-    plt.plot(
-        xAxis,
-        val,
-        label='Val Losses'
-        )
+    if val :
+        plt.plot(
+            xAxis,
+            val,
+            label='Val Losses'
+            )
 
     if log :
         plt.yscale('log')
 
     plt.legend()
-    plt.show()
+    # plt.show()
 
 def plot_decision_boundary(model, dataloader, h=0.02):
     """
