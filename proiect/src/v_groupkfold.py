@@ -60,6 +60,28 @@ class ImageDataset(Dataset):
 
         return self.transform(noisy_img), self.transform(clean_img)
 
+    def xval(self, generator):
+        self.generator = generator
+
+    def split(self):
+        for train_split, val_split in self.generator.split(
+            self.noisy_filenames, self.clean_filenames, self.groups
+        ):
+            train_dataset = ImageDataset(
+                self.noisy_filenames[train_split],
+                self.clean_filenames[train_split],
+                self.path_noisy,
+                self.path_clean
+            )
+
+            val_dataset = ImageDataset(
+                self.noisy_filenames[val_split],
+                self.clean_filenames[val_split],
+                self.path_noisy,
+                self.path_clean
+            )
+
+            yield train_dataset, val_dataset
 
 def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -78,8 +100,8 @@ def main():
         groups.append(int(x[:6]))
 
     l = len(clean_filenames) / 100
-    clean_filenames = clean_filenames[:l]
     noisy_filenames = noisy_filenames[:l]
+    clean_filenames = clean_filenames[:l]
 
     # change working dir to...
     root = '_fit/proiect/'
@@ -89,28 +111,19 @@ def main():
 
     config = toml.load('DnCNN_0.toml')
 
-    gkfGen = GroupKFold(**config['cross-validation'])
+    dataset = ImageDataset(
+        noisy_filenames,
+        clean_filenames,
+        path_noisy,
+        path_clean
+    )
 
-    for fold, (train_split, val_split) in enumerate(gkfGen.split(
-        noisy_filenames, clean_filenames, groups
-    )):
-        train_dataset = ImageDataset(
-            noisy_filenames[train_split],
-            clean_filenames[train_split],
-            path_noisy,
-            path_clean
-        )
+    dataset.xval(GroupKFold(**config['cross-validation']))
 
-        val_dataset = ImageDataset(
-            noisy_filenames[val_split],
-            clean_filenames[val_split],
-            path_noisy,
-            path_clean
-        )
+    for fold, (train_dataset, val_dataset) in enumerate(dataset.split()):
 
         train_loader = DataLoader(train_dataset, **config['dataloader'])
-
-        val_loader   = DataLoader(val_dataset, **config['dataloader'])
+        val_loader   = DataLoader(  val_dataset, **config['dataloader'])
 
         model = DnCNN(**config['model'])
 
