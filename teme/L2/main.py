@@ -83,27 +83,34 @@ noise = np.random.normal(0, noise_sigma, original_img.shape).astype(np.float32) 
 
 # %%
 
-train_dataset = LibriMixDataset(
-    subset="train",
-    typ='sigma' + idx,
-    **config['dataset'],
-)
+results = {
+    'model'     : [],
+    'l_sigma0'  : [],
+    'l_sigma1'  : [],
+    'l_sigma2'  : [],
+}
 
-val_dataset = LibriMixDataset(
-    subset="val",
-    typ='sigma' + idx,
-    **config['dataset'],
-)
+results['model'].append('baseline')
+for idx in range(3):
+    val_dataset = LibriMixDataset(
+        subset="val",
+        typ='sigma' + idx,
+        **config['dataset'],
+    )
 
-train_loader = DataLoader(train_dataset, **config['dataloader'])
-val_loader   = DataLoader(  val_dataset, **config['dataloader'])
+    val_loader   = DataLoader(  val_dataset, **config['dataloader'])
 
-model.evaluate(
-    val_loader,
-    callbacks = [
-        lighter.callbacks.History(),
-    ],
-)
+    val_l = model.evaluate(
+        val_loader,
+        callbacks = [
+            lighter.callbacks.History(),
+        ],
+    )
+
+    results['l_sigma'+idx].append(val_l)
+
+# %% [markdown]
+
 
 # %% [markdown]
 # **3. Train a noise-robust model (`8 pts`)**
@@ -113,39 +120,114 @@ model.evaluate(
 # - Evaluate this new model on the **test set** under all three noise conditions and add the results to the table *(3 pts)*
 # - Compare and analyse: does training with noise improve robustness? Under which conditions does it help most or least? *(5 pts)*
 
-train_dataset = LibriMixDataset(
-    subset="train",
-    typ='sigma1',
-    **config['dataset'],
+# %% [markdown]
+# **3.1. Training**
+
+model_path = os.path.join(
+    working_dir, 'models/ConvTasNet_Noise.pt'
 )
 
-val_dataset = LibriMixDataset(
-    subset="val",
-    typ='sigma1',
-    **config['dataset'],
-)
+if os.path.exists(model_path):
+    model.load(model_path)
+else:
+    train_dataset = LibriMixDataset(
+        subset="train",
+        typ='sigma1',
+        **config['dataset'],
+    )
 
-train_loader = DataLoader(train_dataset, **config['dataloader'])
-val_loader   = DataLoader(  val_dataset, **config['dataloader'])
+    val_dataset = LibriMixDataset(
+        subset="val",
+        typ='sigma1',
+        **config['dataset'],
+    )
 
-chkpoint_path = os.path.join(
-    working_dir, 'models/checkpoints/ConvTasNet_Noise.pt'
-)
-log_path = os.path.join(
-    working_dir, 'logs/ConvTasNet_Noise_logs.csv'
-)
+    train_loader = DataLoader(train_dataset, **config['dataloader'])
+    val_loader   = DataLoader(  val_dataset, **config['dataloader'])
 
-train_l, val_l = model.fit(
-    train_loader,
-    validation_loader=val_loader,
-    callbacks=[
-        lighter.callbacks.CSVLogger(log_path),
-        lighter.callbacks.History(),
-        lighter.callbacks.Checkpoint(
-            chkpoint_path,
-            save_best_only=True
-        ),
-    ],
-    **config['fit'],
-)
+    chkpoint_path = os.path.join(
+        working_dir, 'models/checkpoints/ConvTasNet_Noise.pt'
+    )
+    log_path = os.path.join(
+        working_dir, 'logs/ConvTasNet_Noise_logs.csv'
+    )
 
+    train_l, val_l = model.fit(
+        train_loader,
+        validation_loader=val_loader,
+        callbacks=[
+            lighter.callbacks.CSVLogger(log_path),
+            lighter.callbacks.History(),
+            lighter.callbacks.Checkpoint(
+                chkpoint_path,
+                save_best_only=True
+            ),
+        ],
+        **config['fit'],
+    )
+
+# %% [markdown]
+# **3.2. Evaluation**
+
+results['model'].append('trained')
+for idx in range(3):
+    val_dataset = LibriMixDataset(
+        subset="val",
+        typ='sigma' + idx,
+        **config['dataset'],
+    )
+
+    val_loader   = DataLoader(  val_dataset, **config['dataloader'])
+
+    val_l = model.evaluate(
+        val_loader,
+        callbacks = [
+            lighter.callbacks.History(),
+        ],
+    )
+
+    results['l_sigma'+idx].append(val_l)
+
+# %% [markdown]
+# **Final table**
+
+from IPython.display import Markdown, display
+
+# results = {
+#     'model'     : ['dummy', 'dummy'],
+#     'l_sigma0'  : ['dummy', 'dummy'],
+#     'l_sigma1'  : ['dummy', 'dummy'],
+#     'l_sigma2'  : ['dummy', 'dummy'],
+# }
+
+table = f'''\
+<table style="margin: 0px auto;">
+<thead>
+  <tr>
+    <th rowspan="2">Model</th>
+    <th colspan="3">SI-SNR-PIT on test set — mixtures perturbed with:</th>
+  </tr>
+  <tr>
+    <th>σ = … (SNR ≈ … dB)</th>
+    <th>σ = … (SNR ≈ … dB)</th>
+    <th>σ = … (SNR ≈ … dB)</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Original model (trained on clean mixtures)</td>
+    <td>{results['l_sigma0'][0]}</td>
+    <td>{results['l_sigma1'][0]}</td>
+    <td>{results['l_sigma2'][0]}</td>
+  </tr>
+  <tr>
+    <td>Model trained on σ = …</td>
+    <td>{results['l_sigma0'][1]}</td>
+    <td>{results['l_sigma1'][1]}</td>
+    <td>{results['l_sigma2'][1]}</td>
+  </tr>
+</tbody>
+</table>
+'''
+
+display(Markdown(table))
