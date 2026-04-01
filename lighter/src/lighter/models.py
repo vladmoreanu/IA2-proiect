@@ -3,10 +3,26 @@ from .callbacks import CallbackList
 
 import torch
 
+import os
+
 class Model(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
+    def save(
+        self,
+        filepath,
+    ):
+        output_dir, _ = os.path.split(filepath)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        torch.save(self.state_dict(), filepath)
+
+    def load(
+        self,
+        filepath,
+    ):
+        self.load_state_dict(torch.load(filepath))
 
     def forward(
         self,
