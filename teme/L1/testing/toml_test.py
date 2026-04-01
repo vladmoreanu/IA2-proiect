@@ -2,7 +2,7 @@ import lighter
 
 import torch
 from torch import FloatTensor, LongTensor
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import Dataset, TensorDataset, DataLoader
 from sklearn.model_selection import KFold
 
 import os
@@ -11,6 +11,36 @@ import toml
 import pandas as pd
 
 from xor_dataset import create_xor_dataset
+
+class myDataset(TensorDataset):
+    def __init__(self, *tensors):
+        super().__init__(*tensors)
+        self.generator = None
+        self.inputs = tensors[0]
+        self.targets = tensors[-1]
+        self.groups = None
+
+    def xval(self, generator):
+        self.generator = generator
+
+    def split(self):
+        for train_split, val_split in self.generator.split(
+            self.inputs, self.targets, self.groups
+        ):
+            # THESE 4 ARE ALREADY TENSORS
+            x_train, x_val = self.inputs[train_split], self.inputs[val_split]
+            y_train, y_val = self.targets[train_split], self.targets[val_split]
+
+            train_dataset = TensorDataset(
+                x_train, 
+                y_train
+                )
+            val_dataset = TensorDataset(
+                x_val, 
+                y_val
+                )
+
+            yield train_dataset, val_dataset
 
 
 class csvLogger(lighter.callbacks.Callback):
@@ -69,7 +99,12 @@ class FFN(lighter.Model):
 
 
 def main():
-    inputs, targets = create_xor_dataset(num_samples_per_class=400, noise=0.25)
+    inputs, targets = create_xor_dataset(num_samples_per_class=200, noise=0.25)
+
+    dataset = myDataset(
+        FloatTensor(inputs),
+        LongTensor(targets),
+    )
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(
@@ -80,28 +115,15 @@ def main():
         f'  Using device: {device}, {torch.device(device)}'
     )
 
-    config = toml.load('./_fit/xor_test/FFN_2.toml')
+    config = toml.load('./_fit/xor_test/FFN_0.toml')
 
-    kfGen = KFold(**config['cross-validation'])
+    dataset.xval(KFold(**config['cross-validation']))
 
     fold_losses = []
 
-    for fold, (train_slice, val_slice) in enumerate(
-        kfGen.split(inputs, targets)
-    ):
-        x_train, x_val = inputs[train_slice], inputs[val_slice]
-        y_train, y_val = targets[train_slice], targets[val_slice]
-
-        train_dataset = TensorDataset(
-            FloatTensor(x_train), 
-            LongTensor(y_train)
-            )
-        test_dataset = TensorDataset(
-            FloatTensor(x_val), 
-            LongTensor(y_val)
-            )
+    for fold, (train_dataset, val_dataset) in enumerate(dataset.split()):
         train_loader = DataLoader(train_dataset, **config['dataloader'])
-        val_loader   = DataLoader( test_dataset, **config['dataloader'])
+        val_loader   = DataLoader(  val_dataset, **config['dataloader'])
 
         model = FFN(**config['model'])
 
@@ -113,13 +135,13 @@ def main():
             ],
         )
 
-        save_path = f'./_fit/xor_test/FFN_2/model_f{fold}' \
+        save_path = f'./_fit/xor_test/FFN_0/model_f{fold}' \
             + '_{epoch}.pt'
         train_l, test_l = model.fit(
             train_loader,
             validation_loader=val_loader,
             callbacks=[
-                csvLogger(f'./_fit/xor_test/FFN_2_logs_f{fold}.csv'),
+                csvLogger(f'./_fit/xor_test/FFN_0_logs_f{fold}.csv'),
                 lighter.callbacks.History(),
                 lighter.callbacks.Checkpoint(
                     save_path,

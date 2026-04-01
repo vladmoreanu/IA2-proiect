@@ -48,11 +48,12 @@ class Checkpoint(MonitorCallback):
             return True
         
     def _save_model(self, epoch, batch, logs):
-        filepath = self._get_file_path(epoch, batch, logs)
-        output_dir, _ = os.path.split(filepath)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        torch.save(self._model.state_dict(), filepath)
+        file_path = self._get_file_path(epoch, batch, logs)
+        self._model.save(file_path)
+        # output_dir, _ = os.path.split(filepath)
+        # if not os.path.exists(output_dir):
+        #     os.makedirs(output_dir)
+        # torch.save(self._model.state_dict(), filepath)
 
     def _get_file_path(self, epoch, batch, logs):
         try:
