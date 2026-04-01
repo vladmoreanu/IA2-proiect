@@ -36,18 +36,18 @@ prep_dataset(os.path.join(
     working_dir, config['dataset'].get('root')
 ))
 
-model = ConvTasNet(**config['model'])
-
-model.compile(
-    torch.optim.Adam(model.parameters(), **config['optimizer']),
-    SI_SNR_PIT(),
-    metrics=[],
-    device=device,
-)
-
-model.load(os.path.join(
-    working_dir, 'models/ConvTasNet_baseline.pth'
-))
+# model = ConvTasNet(**config['model'])
+#
+# model.compile(
+#     torch.optim.Adam(model.parameters(), **config['optimizer']),
+#     SI_SNR_PIT(),
+#     metrics=[],
+#     device=device,
+# )
+#
+# model.load(os.path.join(
+#     working_dir, 'models/ConvTasNet_baseline.pth'
+# ))
 
 # %% [markdown]
 
@@ -64,12 +64,85 @@ model.load(os.path.join(
 # > 💡 Recall: $\text{SNR} = 10 \log_{10}\left(\frac{\|x\|^2}{\|z\|^2}\right)$
 
 # %%
-
-# TODO: NOISE ADDITION HERE
-
 import numpy as np
+import librosa
+import soundfile as sf
+import pandas as pd
 
-noise = np.random.normal(0, noise_sigma, original_img.shape).astype(np.float32)  # noise
+
+def add_noise(input_path, sigma=0.01, output_folder_name='sigmatest', sample_rate=8000):
+    """
+    :param input_path: path to .wav file
+    :param sigma: standard deviation of noise distribution
+    :param output_folder_name: folder name for processed .wav, ex: sigma0
+    :param sample_rate: signal sample rate
+    """
+    set_path = os.path.dirname(os.path.dirname(input_path))
+
+    assert os.path.basename(set_path) in ['train', 'val']
+
+    original, sr = librosa.load(input_path, sr=sample_rate)
+    noise = np.random.normal(0, sigma, original.shape).astype(np.float32)
+
+    combined = original + noise
+
+    snr = 10 * np.log10(np.mean(original ** 2) / np.mean(noise ** 2))
+
+    if not os.path.exists(os.path.join(set_path, output_folder_name)):
+        os.makedirs(os.path.join(set_path, output_folder_name))
+
+    if not os.path.exists(os.path.join(set_path, f'mix_{output_folder_name}')):
+        os.makedirs(os.path.join(set_path, f'mix_{output_folder_name}'))
+
+    input_file_name = os.path.basename(input_path)
+
+    sf.write(os.path.join(set_path, output_folder_name, input_file_name), noise, sr)
+    sf.write(os.path.join(set_path, f'mix_{output_folder_name}', input_file_name), combined, sr)
+
+    print(f'SNR for file: {input_file_name}, is: {snr}, with sigma: {sigma}')
+
+
+def add_metadata(folder_path):
+    """
+    :param folder_path: path to .wav noise files, ex: sigma0, not mix_sigma0
+    """
+    def change_path(original_path, folder_name):
+        base_path = os.path.dirname(os.path.dirname(original_path))
+        base_name = os.path.basename(original_path)
+
+        final = os.path.join(base_path, folder_name, base_name)
+        final = final.replace("\\", "/")
+
+        return final
+
+    set_type = os.path.basename(os.path.dirname(folder_path))
+    assert set_type in ['train', 'val']
+
+    metadata_folder = os.path.join(os.path.dirname(os.path.dirname(folder_path)), 'metadata')
+
+    df = pd.read_csv(os.path.join(metadata_folder, f'mixture_{set_type}_mix_both.csv'))
+
+    df['mixture_path'] = df['mixture_path'].apply(lambda x: change_path(x, folder_name=f'mix_{os.path.basename(folder_path)}'))
+
+    df['noise_path'] = df['noise_path'].apply(lambda x: change_path(x, folder_name=os.path.basename(folder_path)))
+
+    df.to_csv(os.path.join(metadata_folder, f'mixture_{set_type}_mix_{os.path.basename(folder_path)}.csv'), index=False)
+
+
+path_train = r".\_fit\hw2\data\mini_libri2mix\MiniLibriMix\train"
+path_val = r".\_fit\hw2\data\mini_libri2mix\MiniLibriMix\val"
+
+# 0.02 - 5.3
+# 0.01 - 11.3
+# 0.005 - 17.4
+
+for add_noise_path in [path_train, path_val]:
+    for idx, sgm in enumerate([0.005, 0.01, 0.02]):
+        for file in os.listdir(os.path.join(add_noise_path, 'mix_clean')):
+            add_noise(input_path=os.path.join(add_noise_path, 'mix_clean', file), sigma=sgm,
+                      output_folder_name=f'sigma{idx}')
+
+        add_metadata(os.path.join(add_noise_path, f'sigma{idx}'))
 
 
 # %% [markdown]
