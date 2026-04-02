@@ -31,13 +31,16 @@ def download_with_progress(url, destination):
             file.write(data)
             bar.update(len(data))
 
-def prep_dataset(path):
-    if not os.path.exists("./MiniLibriMix.zip"):
-        download_with_progress(zip_file_url, "./MiniLibriMix.zip")
 
+def prep_dataset(path):
+    zipfile_path = os.path.join(path, "MiniLibriMix.zip")
     if not os.path.exists(path):
-        with zipfile.ZipFile("./MiniLibriMix.zip", 'r') as z:
+        os.makedirs(path)
+        download_with_progress(zip_file_url, zipfile_path)
+        with zipfile.ZipFile(zipfile_path, 'r') as z:
             z.extractall(path)
+        os.remove(zipfile_path)
+        return
 
 
 class LibriMixDataset(Dataset):
@@ -57,7 +60,7 @@ class LibriMixDataset(Dataset):
         self.seg_len = segment_length * self.sample_rate
         
         assert self.subset in ["train", "val"]
-        assert self.typ in ["clean", "both"]
+        # assert self.typ in ["clean", "both", ]
 
         self.mixtures_path = os.path.join(self.root, 
                                           "MiniLibriMix",

@@ -11,6 +11,13 @@
 # **0. Loading Baseline Model and Prepping Dataset**
 
 # %%
+
+import os
+print(__file__)
+file_dir, _ = os.path.split(__file__)
+if not (os.path.abspath(os.getcwd()) is os.path.abspath(file_dir)):
+    os.chdir(file_dir)
+
 from convtasnet import ConvTasNet, SI_SNR_PIT
 from hw_utils import prep_dataset, LibriMixDataset
 
@@ -19,12 +26,11 @@ import lighter
 import torch
 from torch.utils.data import DataLoader
 
-import os
 import toml
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-config_path = './_fit/hw2/noisy_ss.toml'
+config_path = './noisy_ss.toml'
 
 with open(config_path, 'r') as f:
     config = toml.load(f)
@@ -32,22 +38,21 @@ with open(config_path, 'r') as f:
 config_dir, _ = os.path.split(config_path)
 working_dir = config.get('working_dir', config_dir)
 
-prep_dataset(os.path.join(
-    working_dir, config['dataset'].get('root')
-))
+os.chdir(working_dir)
 
-# model = ConvTasNet(**config['model'])
-#
-# model.compile(
-#     torch.optim.Adam(model.parameters(), **config['optimizer']),
-#     SI_SNR_PIT(),
-#     metrics=[],
-#     device=device,
-# )
-#
-# model.load(os.path.join(
-#     working_dir, 'models/ConvTasNet_baseline.pth'
-# ))
+dataset_path = config['dataset'].get('root')
+prep_dataset(dataset_path)
+
+model = ConvTasNet(**config['model'])
+
+model.compile(
+    torch.optim.Adam(model.parameters(), **config['optimizer']),
+    SI_SNR_PIT(),
+    metrics=[],
+    device=device,
+)
+
+model.load('models/ConvTasNet_Baseline.pth')
 
 # %% [markdown]
 
@@ -68,7 +73,7 @@ import numpy as np
 import librosa
 import soundfile as sf
 import pandas as pd
-
+from tqdm import tqdm
 
 def add_noise(input_path, sigma=0.01, output_folder_name='sigmatest', sample_rate=8000):
     """
@@ -77,6 +82,7 @@ def add_noise(input_path, sigma=0.01, output_folder_name='sigmatest', sample_rat
     :param output_folder_name: folder name for processed .wav, ex: sigma0
     :param sample_rate: signal sample rate
     """
+
     set_path = os.path.dirname(os.path.dirname(input_path))
 
     assert os.path.basename(set_path) in ['train', 'val']
@@ -99,7 +105,7 @@ def add_noise(input_path, sigma=0.01, output_folder_name='sigmatest', sample_rat
     sf.write(os.path.join(set_path, output_folder_name, input_file_name), noise, sr)
     sf.write(os.path.join(set_path, f'mix_{output_folder_name}', input_file_name), combined, sr)
 
-    print(f'SNR for file: {input_file_name}, is: {snr}, with sigma: {sigma}')
+    # print(f'SNR for file: {input_file_name}, is: {snr}, with sigma: {sigma}')
 
 
 def add_metadata(folder_path):
@@ -129,20 +135,21 @@ def add_metadata(folder_path):
     df.to_csv(os.path.join(metadata_folder, f'mixture_{set_type}_mix_{os.path.basename(folder_path)}.csv'), index=False)
 
 
-path_train = r".\_fit\hw2\data\mini_libri2mix\MiniLibriMix\train"
-path_val = r".\_fit\hw2\data\mini_libri2mix\MiniLibriMix\val"
+path_train = os.path.join(dataset_path, 'MiniLibriMix/train')
+path_val   = os.path.join(dataset_path, 'MiniLibriMix/val')
 
 # 0.02 - 5.3
 # 0.01 - 11.3
 # 0.005 - 17.4
 
-for add_noise_path in [path_train, path_val]:
-    for idx, sgm in enumerate([0.005, 0.01, 0.02]):
-        for file in os.listdir(os.path.join(add_noise_path, 'mix_clean')):
-            add_noise(input_path=os.path.join(add_noise_path, 'mix_clean', file), sigma=sgm,
-                      output_folder_name=f'sigma{idx}')
+if not os.path.exists(os.path.join(path_val, 'mix_sigma2')):
+    for add_noise_path in [path_train, path_val]:
+        for idx, sgm in enumerate([0.005, 0.01, 0.02]):
+            for file in tqdm(os.listdir(os.path.join(add_noise_path, 'mix_clean'))):
+                add_noise(input_path=os.path.join(add_noise_path, 'mix_clean', file), sigma=sgm,
+                        output_folder_name=f'sigma{idx}')
 
-        add_metadata(os.path.join(add_noise_path, f'sigma{idx}'))
+            add_metadata(os.path.join(add_noise_path, f'sigma{idx}'))
 
 
 # %% [markdown]
@@ -167,7 +174,7 @@ results['model'].append('baseline')
 for idx in range(3):
     val_dataset = LibriMixDataset(
         subset="val",
-        typ='sigma' + idx,
+        typ=f'sigma{idx}',
         **config['dataset'],
     )
 
@@ -180,7 +187,7 @@ for idx in range(3):
         ],
     )
 
-    results['l_sigma'+idx].append(val_l)
+    results[f'l_sigma{idx}'].append(val_l)
 
 # %% [markdown]
 
@@ -196,9 +203,7 @@ for idx in range(3):
 # %% [markdown]
 # **3.1. Training**
 
-model_path = os.path.join(
-    working_dir, 'models/ConvTasNet_Noise.pt'
-)
+model_path = 'models/ConvTasNet_Noise.pt'
 
 if os.path.exists(model_path):
     model.load(model_path)
@@ -218,12 +223,8 @@ else:
     train_loader = DataLoader(train_dataset, **config['dataloader'])
     val_loader   = DataLoader(  val_dataset, **config['dataloader'])
 
-    chkpoint_path = os.path.join(
-        working_dir, 'models/checkpoints/ConvTasNet_Noise.pt'
-    )
-    log_path = os.path.join(
-        working_dir, 'logs/ConvTasNet_Noise_logs.csv'
-    )
+    chkpoint_path = 'models/checkpoints/ConvTasNet_Noise.pt'
+    log_path = 'logs/ConvTasNet_Noise_logs.csv'
 
     train_l, val_l = model.fit(
         train_loader,
@@ -246,7 +247,7 @@ results['model'].append('trained')
 for idx in range(3):
     val_dataset = LibriMixDataset(
         subset="val",
-        typ='sigma' + idx,
+        typ=f'sigma{idx}',
         **config['dataset'],
     )
 
@@ -259,19 +260,14 @@ for idx in range(3):
         ],
     )
 
-    results['l_sigma'+idx].append(val_l)
+    results[f'l_sigma{idx}'].append(val_l)
 
 # %% [markdown]
 # **Final table**
+df = pd.DataFrame(results)
+df.to_csv('main_results.csv')
 
 from IPython.display import Markdown, display
-
-# results = {
-#     'model'     : ['dummy', 'dummy'],
-#     'l_sigma0'  : ['dummy', 'dummy'],
-#     'l_sigma1'  : ['dummy', 'dummy'],
-#     'l_sigma2'  : ['dummy', 'dummy'],
-# }
 
 table = f'''\
 <table style="margin: 0px auto;">

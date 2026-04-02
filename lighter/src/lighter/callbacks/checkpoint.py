@@ -27,6 +27,11 @@ class Checkpoint(MonitorCallback):
 
         self.filepath       = filepath
         self.save_best_only = save_best_only
+        self.last_saved     = None
+
+    def on_epoch_begin(self, epoch, logs=None):
+        if self.last_saved:
+            self._model.load(self.last_saved)
 
     def on_epoch_end(self, epoch, logs=None):
         if self._should_save(logs):
@@ -50,6 +55,7 @@ class Checkpoint(MonitorCallback):
     def _save_model(self, epoch, batch, logs):
         file_path = self._get_file_path(epoch, batch, logs)
         self._model.save(file_path)
+        self.last_saved = file_path
         # output_dir, _ = os.path.split(filepath)
         # if not os.path.exists(output_dir):
         #     os.makedirs(output_dir)

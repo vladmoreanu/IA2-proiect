@@ -7,6 +7,9 @@ class CSVLogger(Callback):
     def __init__(self, path):
         super().__init__()
         self.path = path
+        if not os.path.exists(self.path):
+            dirs, _ = os.path.split(self.path)
+            os.makedirs(dirs)
     
     def on_epoch_end(self, epoch, logs=None):
         log = {}

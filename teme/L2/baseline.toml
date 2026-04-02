@@ -1,0 +1,33 @@
+chkpoint_path	= "models/checkpoints/ConvTasNet_Baseline.pt"
+log_path	= "logs/ConvTasNet_Baseline_logs.csv"
+model_path	= "models/ConvTasNet_Baseline.pth"
+
+[dataset]
+root		= "data/mini_libri2mix/"
+segment_length	= 3
+sample_rate	= 8000
+
+[dataloader]
+batch_size	= 8
+shuffle		= true
+num_workers	= 4
+prefetch_factor = 4
+
+[model]
+N = 64
+L = 20
+B = 64
+H = 64
+P = 3
+X = 2
+R = 4
+C = 2
+mask_nonlinear = "sigmoid"
+
+[optimizer]
+lr		= 0.001
+weight_decay	= 0
+
+[fit]
+epochs = 150
+

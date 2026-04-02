@@ -1,9 +1,6 @@
-# working_dir = "./_fit/hw2/"
-
 [dataset]
 root = "./data/mini_libri2mix/"
 segment_length = 3
-# typ = "sigma"
 sample_rate = 8000
 
 [dataloader]
@@ -28,4 +25,4 @@ lr = 0.001
 weight_decay = 0
 
 [fit]
-epochs = 5
+epochs = 50

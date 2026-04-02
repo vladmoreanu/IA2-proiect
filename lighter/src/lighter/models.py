@@ -22,7 +22,11 @@ class Model(torch.nn.Module):
         self,
         filepath,
     ):
-        self.load_state_dict(torch.load(filepath))
+        self.load_state_dict(torch.load(
+            filepath,
+            map_location=self.device,
+            weights_only=True
+        ))
 
     def forward(
         self,
