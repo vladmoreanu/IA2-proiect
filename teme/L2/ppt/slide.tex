@@ -1,0 +1,127 @@
+\documentclass{beamer}
+%\documentclass[aspectratio=169]{beamer} % 使用 16:9 宽屏比例
+\usepackage{ctex, hyperref}
+\usepackage[T1]{fontenc}
+
+% other packages
+\usepackage{latexsym,amsmath,xcolor,multicol,booktabs,calligra}
+\usepackage{graphicx,pstricks,listings,stackengine}
+
+\author{MOREANU Vlad, PATRASCU Cosmin}
+\title{Single-Channel Speech Separation}
+\subtitle{The influence of additive noise on blind source separation}
+\institute{National University of Science and Technology POLITEHNICA Bucharest}
+\date{08/04/2026}
+\usepackage{CNU}
+
+% defs
+\def\cmd#1{\texttt{\color{red}\footnotesize $\backslash$#1}}
+\def\env#1{\texttt{\color{blue}\footnotesize #1}}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+\definecolor{halfgray}{gray}{0.55}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\bfseries\color{deepblue},
+    emphstyle=\ttfamily\color{deepred},    % Custom highlighting style
+    stringstyle=\color{deepgreen},
+    numbers=left,
+    numberstyle=\small\color{halfgray},
+    rulesepcolor=\color{red!20!green!20!blue!20},
+    frame=shadowbox,
+}
+
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+    \begin{figure}[htpb]
+        \begin{center}
+            \includegraphics[width=0.4\linewidth]{pic/logo.png}
+        \end{center}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \tableofcontents[sectionstyle=show,subsectionstyle=show/shaded/hide,subsubsectionstyle=show/shaded/hide]
+\end{frame}
+
+
+\section{Section1}
+
+\begin{frame}{xxxxx}
+    \begin{itemize}[<+-| alert@+>] 
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+    \end{itemize}
+\end{frame}
+
+
+\section{section2}
+
+\subsection{subsection1}
+
+\begin{frame}
+    \begin{itemize}
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+    \end{itemize}
+\end{frame}
+
+\section{section3}
+
+\subsection{subsection2}
+
+\begin{frame}{xxxxxx}
+    \begin{itemize}
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{xxxxxx}
+    \begin{itemize}
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+        \item xxxxxx
+    \end{itemize}
+\end{frame}
+\subsection{subsection3}
+
+\begin{frame}{xxxxxx}
+    \begin{itemize}
+        \item xxxxxx
+    \end{itemize}
+\end{frame}
+
+\section{section4}
+\begin{frame}
+    \begin{itemize}
+        \item xxxxxx
+    \end{itemize}
+\end{frame}
+
+
+\section{section5}
+
+% \begin{frame}{xxxxxx}
+%     \bibliographystyle{plain}
+%     \bibliography{ref} % refers to ref.bib
+% \end{frame}
+
+\begin{frame}
+    \begin{center}
+        {\Huge\calligra Thanks!}
+    \end{center}
+\end{frame}
+
+\end{document}
