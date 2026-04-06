@@ -263,7 +263,8 @@ for idx in range(3):
     results[f'l_sigma{idx}'].append(val_l)
 
 # %% [markdown]
-# Prediction
+# **3.2. Evaluation**
+
 import matplotlib.pyplot as plt
 import torchaudio
 
