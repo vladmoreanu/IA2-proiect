@@ -1,8 +1,9 @@
-% !TEX program = xelatex
+% TEX program = xelatex
 \documentclass{beamer}
-\usepackage[fontset=fandol]{ctex}
+% \usepackage[fontset=fandol]{ctex}
 %\documentclass[aspectratio=169]{beamer} % 使用 16:9 宽屏比例
-\usepackage{ctex, hyperref}
+% \usepackage{ctex}
+\usepackage{hyperref}
 \usepackage[T1]{fontenc}
 
 % other packages
@@ -24,17 +25,16 @@
 \definecolor{deepgreen}{rgb}{0,0.5,0}
 \definecolor{halfgray}{gray}{0.55}
 
-\lstset{
-    basicstyle=\ttfamily\small,
-    keywordstyle=\bfseries\color{deepblue},
-    emphstyle=\ttfamily\color{deepred},    % Custom highlighting style
-    stringstyle=\color{deepgreen},
-    numbers=left,
-    numberstyle=\small\color{halfgray},
-    rulesepcolor=\color{red!20!green!20!blue!20},
-    frame=shadowbox,
-}
-
+% \lstset{
+%     basicstyle=\ttfamily\small,
+%     keywordstyle=\bfseries\color{deepblue},
+%     emphstyle=\ttfamily\color{deepred},    % Custom highlighting style
+%     stringstyle=\color{deepgreen},
+%     numbers=left,
+%     numberstyle=\small\color{halfgray},
+%     rulesepcolor=\color{red!20!green!20!blue!20},
+%     frame=shadowbox,
+% }
 
 \begin{document}
 
@@ -47,97 +47,121 @@
     \end{figure}
 \end{frame}
 
-\begin{frame}
-    \tableofcontents[sectionstyle=show,subsectionstyle=show/shaded/hide,subsubsectionstyle=show/shaded/hide]
-\end{frame}
-
+% \begin{frame}
+%     \tableofcontents[sectionstyle=show,subsectionstyle=show/shaded/hide,subsubsectionstyle=show/shaded/hide]
+% \end{frame}
 
 \section{Task Description}
 
 \begin{frame}{Task Description}
-    \begin{itemize}[<+-| alert@+>] 
+    \begin{itemize} % [<+-| alert@+>] 
         \item Analyse the performance of a separation model as the signal-to-noise ratio (SNR) decreases.
         \item Input: Mixture signal with noise of varying levels
         \item Measure the discrepancy between the estimated sources and the true sources
     \end{itemize}
 \end{frame}
 
-
-\section{Choice of noise values}
-\begin{frame}
-    \begin{itemize}
-        \item Additive White Gaussian Noise (AWGN), $\epsilon \sim \mathcal{N}(0, \sigma^2)$.
-        \item To simulate varied acoustic interference levels
-    \end{itemize}
+\section{Baseline model}
+\begin{frame}{Baseline model}
+    Trained for 150 epochs on the clean subset with checkpoints monitoring
+    val\_loss.
+    \begin{multicols}{2}
+        \begin{itemize}
+            \item $ N = 128 $
+            \item $ L = 20 $
+            \item $ B = 128 $
+            \item $ H = 64 $
+            \item $ P = 3 $
+            \item $ X = 2 $
+            \item $ R = 4 $
+            \item $ C = 2 $
+            \item $ \text{mask\_nonlinear} = \text{"sigmoid"} $
+        \end{itemize}
+        \columnbreak
+        \begin{itemize}
+            \item $ lr = 0.001 $
+            \item $ \text{weight\_decay} = 0 $
+        \end{itemize}
+    \end{multicols}
 \end{frame}
 
-\begin{frame}
-    Chosen sigma values:
+\section{The Noise} 
+\begin{frame}{Choice of noise values}
     \begin{itemize}
-            \item $\sigma = 0.005 \implies \text{SNR} \approx 17.4 \text{ dB}$
-            \item $\sigma = 0.01 \implies \text{SNR} \approx 11.3 \text{ dB}$
-            \item $\sigma = 0.02 \implies \text{SNR} \approx 5.3 \text{ dB}$
+        \item Additive White Gaussian Noise $\mathcal{N}(0, \sigma^2)$.
+        \item Chosen sigma values:
+        \begin{itemize}
+            \item $\sigma = 0.005 \implies \text{SNR} \approx 19.89 \text{ dB}$
+            \item $\sigma = 0.01 \implies \text{SNR} \approx 13.85 \text{ dB}$
+            \item $\sigma = 0.02 \implies \text{SNR} \approx 7.83 \text{ dB}$
+        \end{itemize}
     \end{itemize}
 \end{frame}
 
 \section{Training Strategy}
-
-\subsection{subsection2}
-
-\begin{frame}{xxxxxx}
+\begin{frame}{Training Strategy}
     \begin{itemize}
-        \item xxxxxx
-        \item xxxxxx
-        \item xxxxxx
-        \item xxxxxx
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{xxxxxx}
-    \begin{itemize}
-        \item xxxxxx
-        \item xxxxxx
-        \item xxxxxx
-        \item xxxxxx
-    \end{itemize}
-\end{frame}
-\subsection{subsection3}
-
-\begin{frame}{xxxxxx}
-    \begin{itemize}
-        \item xxxxxx
+        \item 50 epochs with clean sources as targets
+        and noisy mixtures as inputs
+        \item Transfer learning from baseline
+        \item Chosen $\sigma = 0.01$ as the other two result in noise that is
+        either too inconsequential or too destructive. 
     \end{itemize}
 \end{frame}
 
 \section{Results}
 
-\begin{frame}{Tabel of Results}
+\begin{frame}{Table of Results}
     \begin{table}
         \centering
         \resizebox{\textwidth}{!}{%
             \begin{tabular}{|l|c|c|c|}
                 \hline
-                \textbf{Model} & \textbf{$\sigma=0.005(SNR=17.4dB)$} & \textbf{$\sigma=0.01(SNR=11.3dB)$} & \textbf{$\sigma=0.02(SNR=5.3dB)$} \\ \hline
-                \textbf{Original model} & \textbf{-4.22} & \textbf{-3.62} & \textbf{-1.86} \\ \hline
-                \textbf{Trained on $\sigma_2$} & \textbf{-4.50} & \textbf{-4.21} & \textbf{-3.13} \\ \hline
+                \textbf{Model}
+                &
+                \textbf{$\sigma=0.005(SNR=19.89dB)$}
+                &
+                \textbf{$\sigma=0.01(SNR=13.85dB)$}
+                &
+                \textbf{$\sigma=0.02(SNR=7.83dB)$}
+                \\
+                \hline
+                \textbf{Original model}
+                &
+                \textbf{-4.22}
+                &
+                \textbf{-3.62}
+                &
+                \textbf{-1.86}
+                \\
+                \hline
+                \textbf{Trained on $\sigma_2$}
+                &
+                \textbf{-4.50}
+                &
+                \textbf{-4.21}
+                &
+                \textbf{-3.13}
+                \\
+                \hline
             \end{tabular}%
         }
         \caption{Results - SI-SNR-PIT on test set}
     \end{table}
 \end{frame}
 
-\begin{frame}{Mixed Signal}
-    \begin{figure}
-        \centering
-        \includegraphics[width=1\linewidth, height=0.5\textheight]{pic/mixed.png}
-        \caption{Plot of Mixed Signals}
-    \end{figure}
-\end{frame}
+% \begin{frame}{Mixed Signal}
+%     \begin{figure}
+%         \centering
+%         \includegraphics[width=1\linewidth]{pic/mixed.png}
+%         \caption{Plot of Mixed Signals}
+%     \end{figure}
+% \end{frame}
 
 \begin{frame}{First Source}
     \begin{figure}
         \centering
-        \includegraphics[width=1\linewidth, height=0.4\textheight]{pic/s1.png}
+        \includegraphics[width=1\linewidth]{pic/s1.png}
     \end{figure}
 
     \begin{figure}
@@ -149,7 +173,7 @@
 \begin{frame}{Second Source}
     \begin{figure}
         \centering
-        \includegraphics[width=1\linewidth, height=0.4\textheight]{pic/s2.png}
+        \includegraphics[width=1\linewidth]{pic/s2.png}
     \end{figure}
 
     \begin{figure}
@@ -159,17 +183,17 @@
 \end{frame}
 
 
-\section{section5}
+% \section{section5}
 
 % \begin{frame}{xxxxxx}
 %     \bibliographystyle{plain}
 %     \bibliography{ref} % refers to ref.bib
 % \end{frame}
 
-\begin{frame}
-    \begin{center}
-        {\Huge\calligra Thanks!}
-    \end{center}
-\end{frame}
+% \begin{frame}
+%     \begin{center}
+%         {\Huge\calligra Thanks!}
+%     \end{center}
+% \end{frame}
 
 \end{document}
