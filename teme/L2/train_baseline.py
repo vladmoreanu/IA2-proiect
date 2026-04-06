@@ -5,6 +5,7 @@ def main(config_path):
     import lighter
     import torch
     from torch.utils.data import DataLoader
+    import toml
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
