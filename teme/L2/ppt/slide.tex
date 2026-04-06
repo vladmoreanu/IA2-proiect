@@ -1,4 +1,6 @@
+% !TEX program = xelatex
 \documentclass{beamer}
+\usepackage[fontset=fandol]{ctex}
 %\documentclass[aspectratio=169]{beamer} % 使用 16:9 宽屏比例
 \usepackage{ctex, hyperref}
 \usepackage[T1]{fontenc}
@@ -70,6 +72,7 @@
 \end{frame}
 
 \begin{frame}
+    Chosen sigma values:
     \begin{itemize}
             \item $\sigma = 0.005 \implies \text{SNR} \approx 17.4 \text{ dB}$
             \item $\sigma = 0.01 \implies \text{SNR} \approx 11.3 \text{ dB}$
@@ -106,11 +109,53 @@
     \end{itemize}
 \end{frame}
 
-\section{section4}
-\begin{frame}
-    \begin{itemize}
-        \item xxxxxx
-    \end{itemize}
+\section{Results}
+
+\begin{frame}{Tabel of Results}
+    \begin{table}
+        \centering
+        \resizebox{\textwidth}{!}{%
+            \begin{tabular}{|l|c|c|c|}
+                \hline
+                \textbf{Model} & \textbf{$\sigma=0.005(SNR=17.4dB)$} & \textbf{$\sigma=0.01(SNR=11.3dB)$} & \textbf{$\sigma=0.02(SNR=5.3dB)$} \\ \hline
+                \textbf{Original model} & \textbf{-4.22} & \textbf{-3.62} & \textbf{-1.86} \\ \hline
+                \textbf{Trained on $\sigma_2$} & \textbf{-4.50} & \textbf{-4.21} & \textbf{-3.13} \\ \hline
+            \end{tabular}%
+        }
+        \caption{Results - SI-SNR-PIT on test set}
+    \end{table}
+\end{frame}
+
+\begin{frame}{Mixed Signal}
+    \begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth, height=0.5\textheight]{pic/mixed.png}
+        \caption{Plot of Mixed Signals}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{First Source}
+    \begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth, height=0.4\textheight]{pic/s1.png}
+    \end{figure}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth]{pic/p1.png}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Second Source}
+    \begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth, height=0.4\textheight]{pic/s2.png}
+    \end{figure}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth]{pic/p2.png}
+    \end{figure}
 \end{frame}
 
 
