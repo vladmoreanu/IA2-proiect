@@ -3,7 +3,15 @@ from dataset import ImageDataset
 
 import lighter
 import torch
-from torch.utils.data import DataLoader, random_split, RandomSampler
+from torch.utils.data import DataLoader, random_split, RandomSampler, Subset
+import random
+
+import warnings
+warnings.filterwarnings(
+    action="ignore",
+    category=UserWarning,
+    message="TypedStorage is deprecated"
+)
 
 # path_clean = r'./DATASETS/Flickr2K/normal_images'
 # path_noisy = r'./DATASETS/Flickr2K/noise_images'
@@ -14,10 +22,13 @@ path_noisy = r"E:\baze de date\Flickr2K\noise_images_tiles"
 
 if __name__ == '__main__':
     batch_size = 16
-    train_split = 0.95
+    train_split = 0.99
     num_of_layers = 17  # 9  # default 17
-    epochs = 20
+    epochs = 10
     learning_rt = 1e-3
+    num_samples_train = 3200  # number of samples per epoch for train, None to ignore
+    num_samples_val = 1600  # number of samples per epoch for validation, None to ignore
+    validation_freq = 2
 
     num_workers = 4
     prefetch_factor = 6
@@ -43,7 +54,14 @@ if __name__ == '__main__':
         generator=torch.Generator().manual_seed(42)  # same split across different runs
     )
 
-    sampler = RandomSampler(train_dataset, num_samples=1600, replacement=False)
+    if num_samples_train is not None:
+        sampler = RandomSampler(train_dataset, num_samples=num_samples_train, replacement=True)
+    else:
+        sampler = None
+
+    if num_samples_val is not None:
+        val_indices = random.sample(range(len(val_dataset)), num_samples_val)
+        val_dataset = Subset(val_dataset, val_indices)
 
     train_loader = DataLoader(
         train_dataset,
@@ -79,9 +97,9 @@ if __name__ == '__main__':
         train_loader,
         epochs=epochs,
         validation_loader=val_loader,
-        validation_freq=10,
+        validation_freq=validation_freq,
         callbacks=[
-            lighter.callbacks.History(),
-            lighter.callbacks.Checkpoint('./checkpoints/DnCNN.pt'),
+            lighter.callbacks.History('./plots/test.png'),
+            lighter.callbacks.Checkpoint('./checkpoints/DnCNN_test.pt'),
         ]
     )
