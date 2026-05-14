@@ -13,11 +13,11 @@ warnings.filterwarnings(
     message="TypedStorage is deprecated"
 )
 
-# path_clean = r'./DATASETS/Flickr2K/normal_images'
-# path_noisy = r'./DATASETS/Flickr2K/noise_images'
+path_clean = r'./DATASETS/Flickr2K/normal_images_tiles'
+path_noisy = r'./DATASETS/Flickr2K/noise_images_tiles'
 
-path_clean = r"E:\baze de date\Flickr2K\normal_images_tiles"
-path_noisy = r"E:\baze de date\Flickr2K\noise_images_tiles"
+# path_clean = r"E:\baze de date\Flickr2K\normal_images_tiles"
+# path_noisy = r"E:\baze de date\Flickr2K\noise_images_tiles"
 
 
 if __name__ == '__main__':
@@ -26,8 +26,8 @@ if __name__ == '__main__':
     num_of_layers = 17  # 9  # default 17
     epochs = 10
     learning_rt = 1e-3
-    num_samples_train = 3200  # number of samples per epoch for train, None to ignore
-    num_samples_val = 1600  # number of samples per epoch for validation, None to ignore
+    num_samples_train = None  # number of samples per epoch for train, None to ignore
+    num_samples_val = None  # number of samples per epoch for validation, None to ignore
     validation_freq = 2
 
     num_workers = 4
