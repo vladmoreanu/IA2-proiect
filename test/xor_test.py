@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
-from xor_dataset import create_xor_dataset
+from test.xor_dataset import create_xor_dataset
 
 x, y = create_xor_dataset(num_samples_per_class=400, noise=0.25)
 

@@ -10,7 +10,7 @@ import toml
 
 import pandas as pd
 
-from xor_dataset import create_xor_dataset
+from test.xor_dataset import create_xor_dataset
 
 class myDataset(TensorDataset):
     def __init__(self, *tensors):
