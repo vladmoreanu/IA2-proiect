@@ -99,7 +99,7 @@ if __name__ == '__main__':
         validation_loader=val_loader,
         validation_freq=validation_freq,
         callbacks=[
-            lighter.callbacks.History('./plots/test.png'),
+            lighter.callbacks.History(),
             lighter.callbacks.Checkpoint('./checkpoints/DnCNN_test.pt'),
         ]
     )
