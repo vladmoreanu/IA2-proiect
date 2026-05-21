@@ -6,9 +6,9 @@ import numpy as np
 from tqdm import tqdm
 from model import DnCNN
 
-path_to_model = r"C:\Users\MSI\PycharmProjects\IA2-proiect\proiect\src\checkpoints\DnCNN_0.pt"
-path_noisy = r"E:\baze de date\Flickr2K\exemple\noisy\0002.png"
-path_cleaned = r"E:\baze de date\Flickr2K\exemple\processed\0002_90.png"
+path_to_model = r"C:\Users\MSI\PycharmProjects\IA2-proiect\proiect\src\checkpoints\DnCNN_0.pt" # TODO: FIX THIS PATH
+path_noisy = datasets / "Flickr2K/exemple/noisy/0002.png"
+path_cleaned = datasets / "Flickr2K/exemple/processed/0002_90.png"
 
 
 def clean_image(model_path, image_path, output_path, tile_size=128, stride=96):

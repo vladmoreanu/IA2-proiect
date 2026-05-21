@@ -2,11 +2,13 @@ import os
 import cv2
 from tqdm import tqdm
 
-path_clean = r"E:\baze de date\Flickr2K\normal_images"
-path_noisy = r"E:\baze de date\Flickr2K\noise_images"
+datasets = os.environ.get("DATASETS")
 
-path_clean_output = r"E:\baze de date\Flickr2K\normal_images_tiles"
-path_noisy_output = r"E:\baze de date\Flickr2K\noise_images_tiles"
+path_clean = datasets / "Flickr2K/normal_images"
+path_noisy = datasets / "Flickr2K/noise_images"
+
+path_clean_output = datasets / "Flickr2K/normal_images_tiles"
+path_noisy_output = datasets / "Flickr2K/noise_images_tiles"
 
 
 def tile_dataset(clean_dir, output_dir, tile_size=128):

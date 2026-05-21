@@ -3,10 +3,11 @@ import cv2
 import numpy as np
 import random
 
-path_normal = r"./DATASETS/Flickr2K/normal_images"
-path_noise = r"./DATASETS/Flickr2K/noise_images"
-
 # Dataset link: https://www.kaggle.com/datasets/daehoyang/flickr2k
+
+datasets = (os.environ.get("DATASETS"))
+path_clean = datasets / "Flickr2K/normal_images"
+path_noise = datasets / "Flickr2K/noise_images"
 
 
 def add_noise(image_path, output_dir, output_name=None, kernel_size=5, kernel_sigma=0.0, noise_sigma=25.0):
@@ -23,10 +24,10 @@ def add_noise(image_path, output_dir, output_name=None, kernel_size=5, kernel_si
         cv2.imwrite(os.path.join(output_dir, img_name), noisy_blurred)
 
 
-for image_name in os.listdir(path_normal):
+for image_name in os.listdir(path_clean):
     ker_size = random.choice([3, 5, 7, 9])
     ker_sigma = random.uniform(0.1, 2.0)
     nos_sigma = random.uniform(0, 50)
 
-    add_noise(image_path=os.path.join(path_normal, image_name), output_dir=path_noise,
+    add_noise(image_path=os.path.join(path_clean, image_name), output_dir=path_noise,
               kernel_size=ker_size, kernel_sigma=ker_sigma, noise_sigma=nos_sigma)
