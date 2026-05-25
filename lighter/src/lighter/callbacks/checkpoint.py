@@ -29,9 +29,10 @@ class Checkpoint(MonitorCallback):
         self.save_best_only = save_best_only
         self.last_saved     = None
 
-    def on_epoch_begin(self, epoch, logs=None):
-        if self.last_saved:
-            self._model.load(self.last_saved)
+    # Not sure this is ok...
+    # def on_epoch_begin(self, epoch, logs=None):
+    #     if self.last_saved:
+    #         self._model.load(self.last_saved)
 
     def on_epoch_end(self, epoch, logs=None):
         if self._should_save(logs):

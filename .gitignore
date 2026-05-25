@@ -1,10 +1,9 @@
 ################################################################################
 # CUSTOM
 ################################################################################
-DATASETS/
 data/
 
-latex-bin/
+.bin/
 
 *.zip
 # .pt files for checkpoint saves, .pth files for permanent saves (commited) 

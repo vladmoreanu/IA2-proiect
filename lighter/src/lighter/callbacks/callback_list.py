@@ -18,7 +18,7 @@ class CallbackList(Callback):
         if params:
             super().set_params(params)
             for callback in self.callbacks:
-                callback.params = params
+                callback.set_params(params)
 
     def on_epoch_begin(self, epoch, logs=None):
         for callback in self.callbacks:

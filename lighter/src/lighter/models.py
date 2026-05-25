@@ -1,11 +1,13 @@
 from .metrics import Metric, Loss
-from .callbacks import CallbackList
+from .callbacks import CallbackList, History, PBar
 
 import torch
 
 import os
 
 class Model(torch.nn.Module):
+    history: History
+
     def __init__(self):
         super().__init__()
 
@@ -51,7 +53,7 @@ class Model(torch.nn.Module):
         self.loss_fn    = loss
         self.metrics    = [Loss()] + metrics
         self.device     = device
-        
+
         self.to(self.device)
 
     def step(
@@ -85,7 +87,6 @@ class Model(torch.nn.Module):
                 
             else:
                 self.callbacks.on_val_batch_begin(idx)
-
                 with torch.no_grad():
                     outputs = self(inputs)
                     loss = self.loss_fn(outputs, targets)
@@ -130,38 +131,30 @@ class Model(torch.nn.Module):
         self.to(self.device)
 
         self.callbacks = CallbackList(
-            callbacks,
-            self,
-            train_loader    = train_loader,
-            epochs          = epochs,
-            val_loader      = validation_loader,
-            val_freq        = validation_freq,
+            callbacks = (callbacks or []) + [History(), PBar()],
+            model = self,
+            epochs = epochs,
+            steps = len(train_loader),
+            val_steps = len(validation_loader),
+            val_freq = validation_freq,
         )
 
         self.callbacks.on_train_begin()
 
-        train_losses = []
-        val_losses = []
-        
-        for e in range(epochs):
+        for e in range(1, epochs+1):
             self.callbacks.on_epoch_begin(e)
-            
-            train_log = self.step(train_loader, training = True)
+
+            log = self.step(train_loader, training = True)
             if (validation_loader is not None) & (e % validation_freq == 0):
                 val_log = self.step(validation_loader)
+                log |= val_log
 
-            train_losses.append(train_log['train_loss'])
-            val_losses.append(val_log['val_loss'])
+            self.callbacks.on_epoch_end(e, log)
 
-            self.callbacks.on_epoch_end(e, train_log | val_log)
+        self.callbacks.on_train_end(log)
 
-        self.callbacks.on_train_end(train_log | val_log)
+        return self.history
 
-        if validation_loader:
-            return train_losses, val_losses
-        else:
-            return train_losses
-        
     def evaluate(
         self,
         data_loader=None,
@@ -175,21 +168,22 @@ class Model(torch.nn.Module):
         self.to(self.device)
 
         self.callbacks = CallbackList(
-            callbacks,
-            self,
-            data_loader = data_loader,
+            callbacks = (callbacks or []) + [History(), PBar()],
+            model = self,
+            steps = len(data_loader)
         )
 
         self.callbacks.on_val_begin()
 
-        val_losses = []
+        log = self.step(data_loader)
 
-        val_log = self.step(data_loader)
-        val_losses.append(val_log['val_loss'])
+        self.callbacks.on_val_end(log)
 
-        self.callbacks.on_val_end(val_log)
+        results = []
+        for val in log.values():
+            results.append(val)
 
-        return val_losses
+        return results
 
     def predict(
         self,
@@ -202,9 +196,9 @@ class Model(torch.nn.Module):
         self.to(self.device)
 
         self.callbacks = CallbackList(
-            callbacks,
-            self,
-            data_loader = data_loader,
+            callbacks = (callbacks or []) + [History(), PBar()],
+            model = self,
+            steps = len(data_loader),
         )
 
         self.eval()

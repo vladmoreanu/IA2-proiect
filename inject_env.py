@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).parent
 CONFIG_DIR = PROJECT_ROOT / ".userenv"
 VENV_DIR = PROJECT_ROOT / ".venv"
 
-# ── Markers so the script is idempotent (safe to re-run) ───────-──────────────
+# Markers so the script is idempotent (safe to re-run)
 BLOCK_START = "# >>> project env vars >>>"
 BLOCK_END   = "# <<< project env vars <<<"
 

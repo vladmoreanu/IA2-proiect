@@ -1,2 +1,2 @@
 @echo off
-python "%~dp0inject_venv.py" %*
+python "%~dp0inject_env.py" %*
