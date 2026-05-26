@@ -8,6 +8,7 @@ from typing import Optional
 from utils.env import resolve_datasets_dir
 from utils.hashing import write_timestamp_marker
 
+
 def download(url, output: Path):
     if output.suffix != '.zip':
         raise ValueError("File path must include .zip extension")
@@ -58,7 +59,7 @@ def cleanup(zipfile: Path):
 
 
 def is_complete(output: Path) -> bool:
-    return (output / "clean" / ".done").exists()
+    return (output / "raw" / ".done").exists()
 
 
 def ensure_fetched(
@@ -79,7 +80,7 @@ def ensure_fetched(
     download(url, zipfile)
     unzip(zipfile, datasets_path)
 
-    subfolder = flickr2k / "clean"
+    subfolder = flickr2k / "raw"
     subfolder.mkdir(parents=True, exist_ok=True)
     for item in flickr2k.iterdir():
         # don't move the target into itself

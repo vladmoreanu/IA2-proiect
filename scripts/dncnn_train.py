@@ -9,7 +9,30 @@ import warnings
 from pathlib import Path
 
 import torch
-from torch.utils.data import DataLoader, random_split, RandomSampler, Subset
+from sklearn.model_selection import GroupShuffleSplit
+from torch.utils.data import DataLoader, RandomSampler, Subset
+
+
+def subset_first_n_groups(dataset, n: int) -> Subset:
+    if dataset.groups is None:
+        raise ValueError("Dataset does not expose groups")
+
+    if n < 1:
+        raise ValueError("n must be >= 1")
+
+    seen = []
+    selected_indices = []
+
+    for idx, group in enumerate(dataset.groups):
+        if group not in seen:
+            if len(seen) >= n:
+                break
+            seen.append(group)
+
+        if group in seen:
+            selected_indices.append(idx)
+
+    return Subset(dataset, selected_indices)
 
 
 def main():
@@ -51,43 +74,45 @@ def main():
 
     dataset = Flickr2K("tiled_pairs", device=torch.device(device))
 
-    train_size = int(len(dataset) * config.train_split)
-    val_size = len(dataset) - train_size
+    ds = subset_first_n_groups(dataset, 100)
 
-    train_dataset, val_dataset = random_split(
-        dataset,
-        [train_size, val_size],
-        generator=torch.Generator().manual_seed(42),  # same split across different runs
-    )
+    gss = GroupShuffleSplit(test_size=0.2, random_state=0)
+
+    train_idx, val_idx = next(gss.split(ds.samples, groups=ds.groups))
+
+    train_ds = Subset(ds, train_idx)
+    val_ds = Subset(ds, val_idx)
 
     if config.num_samples_train is not None:
+        shuffle = None
         sampler = RandomSampler(
-            train_dataset, num_samples=config.num_samples_train, replacement=True
+            train_ds, num_samples=config.num_samples_train, replacement=True
         )
     else:
         sampler = None
+        shuffle = True
 
-    if config.num_samples_val is not None:
-        val_indices = random.sample(range(len(val_dataset)), config.num_samples_val)
-        val_dataset = Subset(val_dataset, val_indices)
+
+    # if config.num_samples_val is not None:
+    #     val_indices = random.sample(range(len(val_ds)), config.num_samples_val)
+    #     val_ds = Subset(val_ds, val_indices)
 
     train_loader = DataLoader(
-        train_dataset,
+        train_ds,
         batch_size=config.batch_size,
+        shuffle=shuffle,
         sampler=sampler,
         num_workers=config.num_workers,
         prefetch_factor=config.prefetch_factor,
-        pin_memory_device=device,
         pin_memory=True,
         persistent_workers=True,
     )
     val_loader = DataLoader(
-        val_dataset,
+        val_ds,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         prefetch_factor=config.prefetch_factor,
-        pin_memory_device=device,
         pin_memory=True,
         persistent_workers=True,
     )
