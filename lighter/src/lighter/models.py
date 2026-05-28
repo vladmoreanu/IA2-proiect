@@ -196,15 +196,15 @@ class Model(torch.nn.Module):
         self.to(self.device)
 
         self.callbacks = CallbackList(
-            callbacks = (callbacks or []) + [History(), PBar()],
-            model = self,
-            steps = len(data_loader),
+            callbacks=(callbacks or []) + [History(), PBar()],
+            model=self,
+            steps=len(data_loader),
         )
 
         self.eval()
-
         self.callbacks.on_predict_begin()
 
+        all_outputs = []
         for idx, inputs in enumerate(data_loader):
             inputs = inputs.to(self.device)
 
@@ -214,7 +214,8 @@ class Model(torch.nn.Module):
                 outputs = self(inputs)
 
             self.callbacks.on_predict_batch_end(idx)
+            all_outputs.append(outputs.cpu())
 
         self.callbacks.on_predict_end()
 
-        return outputs
+        return torch.cat(all_outputs)

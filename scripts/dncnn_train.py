@@ -3,14 +3,12 @@ from datasets import Flickr2K
 
 import lighter
 
-import os
-import random
 import warnings
-from pathlib import Path
+from multiprocessing import freeze_support
 
 import torch
-from sklearn.model_selection import GroupShuffleSplit
 from torch.utils.data import DataLoader, RandomSampler, Subset
+from sklearn.model_selection import GroupShuffleSplit
 
 
 def subset_first_n_groups(dataset, n: int) -> Subset:
@@ -32,17 +30,13 @@ def subset_first_n_groups(dataset, n: int) -> Subset:
         if group in seen:
             selected_indices.append(idx)
 
-    return Subset(dataset, selected_indices)
+    subset = Subset(dataset, selected_indices)
+    subset.samples = [dataset.samples[i] for i in selected_indices]
+    subset.groups = [dataset.groups[i] for i in selected_indices]
+    return subset
 
 
 def main():
-    datasets = Path(os.environ.get("DATASETS"))
-    path_clean = datasets / "Flickr2K/normal_images_tiles"
-    path_noisy = datasets / "Flickr2K/noise_images_tiles"
-
-    print(path_clean)
-    print(path_noisy)
-
     warnings.filterwarnings(
         action="ignore", category=UserWarning, message="TypedStorage is deprecated"
     )
@@ -50,7 +44,7 @@ def main():
     config = lighter.Config(
         {
             "batch_size": 16,
-            "train_split": 0.99,
+            "test_size": 0.2,
             # 9  # default 17
             "num_of_layers": 17,
             "epochs": 10,
@@ -62,17 +56,18 @@ def main():
             "validation_freq": 2,
             "num_workers": 4,
             "prefetch_factor": 8,
+            "chkpoint": "chkpoint/DnCNN_today.pt",
         }
     )
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("System :")
     print(f"  PyTorch version: {torch.__version__}")
     print(f"  CUDA available: {torch.cuda.is_available()}")
     print(f"  CUDA version PyTorch expects: {torch.version.cuda}")
     print(f"  Using device: {device}")
 
-    dataset = Flickr2K("tiled_pairs", device=torch.device(device))
+    dataset = Flickr2K("tiled_pairs", device=device)
 
     ds = subset_first_n_groups(dataset, 100)
 
@@ -89,9 +84,8 @@ def main():
             train_ds, num_samples=config.num_samples_train, replacement=True
         )
     else:
-        sampler = None
         shuffle = True
-
+        sampler = None
 
     # if config.num_samples_val is not None:
     #     val_indices = random.sample(range(len(val_ds)), config.num_samples_val)
@@ -132,10 +126,11 @@ def main():
         validation_loader=val_loader,
         validation_freq=config.validation_freq,
         callbacks=[
-            lighter.callbacks.Checkpoint("./checkpoints/DnCNN_test.pt"),
+            lighter.callbacks.Checkpoint(config.chkpoint),
         ],
     )
 
 
 if __name__ == "__main__":
+    freeze_support()
     main()

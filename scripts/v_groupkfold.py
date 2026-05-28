@@ -1,99 +1,115 @@
 from models import DnCNN
 from datasets import Flickr2K
 
-# import lighter
+import lighter
 
-# import toml
+import toml
+from pathlib import Path
+import warnings
+from datetime import datetime
+from multiprocessing import freeze_support
 
 import torch
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader, Subset
+from sklearn.model_selection import GroupKFold
 
-# from sklearn.model_selection import GroupKFold
 
-# import pandas as pd
-# import numpy as np
+def subset_first_n_groups(dataset, n: int) -> Subset:
+    if dataset.groups is None:
+        raise ValueError("Dataset does not expose groups")
 
-# import os
-# from PIL import Image
-# from torch.utils.data import Dataset
-# from torchvision import transforms
+    if n < 1:
+        raise ValueError("n must be >= 1")
 
-# from datetime import datetime
+    seen = []
+    selected_indices = []
+
+    for idx, group in enumerate(dataset.groups):
+        if group not in seen:
+            if len(seen) >= n:
+                break
+            seen.append(group)
+
+        if group in seen:
+            selected_indices.append(idx)
+
+    subset = Subset(dataset, selected_indices)
+    subset.samples = [dataset.samples[i] for i in selected_indices]
+    subset.groups = [dataset.groups[i] for i in selected_indices]
+    return subset
+
 
 def main():
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f'System :')
-    print(f'  PyTorch version: {torch.__version__}')
-    print(f'  CUDA available: {torch.cuda.is_available()}')
-    print(f'  CUDA version PyTorch expects: {torch.version.cuda}')
-    print(f'  Using device: {device}')
-
-    path_clean = r'./DATASETS/Flickr2K/normal_images_tiles'
-    path_noisy = r'./DATASETS/Flickr2K/noise_images_tiles'
-    noisy_filenames = np.array(sorted(os.listdir(path_clean)))
-    clean_filenames = np.array(sorted(os.listdir(path_noisy)))
-    groups = []
-    for x in clean_filenames:
-        groups.append(int(x[:6]))
-
-    l = len(clean_filenames) / 100
-    noisy_filenames = noisy_filenames[:l]
-    clean_filenames = clean_filenames[:l]
-
-    # # change working dir to...
-    # root = '_fit/proiect/'
-    # # if not os.path.exists(root):
-    # #     os.makedirs(root)
-    # os.chdir(root)
-
-    config = toml.load('DnCNN_0.toml')
-
-    dataset = Flickr2K(
-        noisy_filenames,
-        clean_filenames,
-        path_noisy,
-        path_clean
+    warnings.filterwarnings(
+        action="ignore", category=UserWarning, message="TypedStorage is deprecated"
     )
 
-    dataset.xval(GroupKFold(**config['cross-validation']))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("System :")
+    print(f"  PyTorch version: {torch.__version__}")
+    print(f"  CUDA available: {torch.cuda.is_available()}")
+    print(f"  CUDA version PyTorch expects: {torch.version.cuda}")
+    print(f"  Using device: {device}")
 
-    for fold, (train_dataset, val_dataset) in enumerate(dataset.split()):
-        train_loader = DataLoader(train_dataset, **config['dataloader'])
-        val_loader   = DataLoader(  val_dataset, **config['dataloader'])
+    config_path = Path("_fit/proiect/DnCNN_0.toml")
+    config = lighter.Config(toml.load(config_path))
 
-        model = DnCNN(**config['model'])
+    out_dir = config_path.parent
+    out_name = config_path.stem
+
+    dataset = Flickr2K("tiled_pairs", device=device)
+
+    ds = subset_first_n_groups(dataset, 100)
+
+    gkf = GroupKFold(**config.cross_validation)
+
+    for fold, (train_idx, val_idx) in enumerate(
+        gkf.split(ds.samples, groups=ds.groups)
+    ):
+        train_ds = Subset(ds, train_idx)
+        val_ds = Subset(ds, val_idx)
+
+        train_loader = DataLoader(train_ds, shuffle=True, **config.dataloader)
+        val_loader = DataLoader(val_ds, shuffle=False, **config.dataloader)
+
+        model = DnCNN(**config.model)
 
         model.compile(
-            torch.optim.Adam(model.parameters(), **config['optimizer']),
-            torch.nn.CrossEntropyLoss(),
-            metrics=[
-                lighter.metrics.PSNR()
-            ],
+            torch.optim.Adam(model.parameters(), **config.optimizer),
+            torch.nn.MSELoss(),
+            metrics=[lighter.metrics.PSNR()],
             device=device,
         )
 
         today = datetime.now().date()
-        checkpointPath = 'DnCNN_0/model_{time}_f{fold}.pt'.format(
-            fold=fold,
-            time=today,
-            )
 
-        logsPath = 'DnCNN_0_logs_{time}_f{fold}.csv'.format(
+        checkpoint_path = "model_{time}_f{fold}.pt".format(
             fold=fold,
             time=today,
-            )
+        )
+        checkpoint_path = str(out_dir / out_name / checkpoint_path)
+
+        log_path = "{name}_logs_{time}_f{fold}.csv".format(
+            name=out_name,
+            fold=fold,
+            time=today,
+        )
+        log_path = str(out_dir / log_path)
 
         hist = model.fit(
             train_loader,
             validation_loader=val_loader,
             callbacks=[
-                lighter.callbacks.CSVLogger(logsPath),
+                lighter.callbacks.CSVLogger(log_path),
                 lighter.callbacks.Checkpoint(
-                    checkpointPath, save_best_only=True,
+                    checkpoint_path,
+                    save_best_only=True,
                 ),
             ],
-            **config['fit'],
+            **config.fit,
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
+    freeze_support()
     main()

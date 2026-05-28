@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn.functional as F
 from torchvision.transforms.functional import gaussian_blur
@@ -66,3 +65,20 @@ def tile(images: torch.Tensor, tile_size: int) -> torch.Tensor:
 
     # (N, T, C, tile_size, tile_size)
     return tiled.view(n, tiles_h * tiles_w, c, tile_size, tile_size)
+
+
+def untile(tiles: torch.Tensor, tiles_h: int, tiles_w: int) -> torch.Tensor:
+    n, t, c, tile_size, _ = tiles.shape
+
+    assert t == tiles_h * tiles_w, (
+        f"Expected {tiles_h * tiles_w} tiles (tiles_h={tiles_h}, tiles_w={tiles_w}), got {t}"
+    )
+
+    # (N, tiles_h, tiles_w, C, tile_size, tile_size)
+    x = tiles.view(n, tiles_h, tiles_w, c, tile_size, tile_size)
+
+    # (N, C, tiles_h, tile_size, tiles_w, tile_size)
+    x = x.permute(0, 3, 1, 4, 2, 5).contiguous()
+
+    # (N, C, H, W)
+    return x.view(n, c, tiles_h * tile_size, tiles_w * tile_size)

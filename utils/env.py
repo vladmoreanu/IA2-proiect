@@ -6,7 +6,7 @@ import torch
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def resolve_datasets_dir(override: Optional[Path]) -> Path:
+def resolve_datasets_dir(override: Optional[Path] = None) -> Path:
     datasets_env = os.environ.get("DATASETS")
     if override is None and datasets_env is None:
         raise ValueError(
