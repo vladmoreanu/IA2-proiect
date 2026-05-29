@@ -2,23 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run: Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "scripts.${fileBasenameNoExtension}",
-            "console": "integratedTerminal",
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
-            "envFile": "${workspaceFolder}/.userenv/.env.${env:USERNAME}",
-            "noDebug": true
-        },
-        {
             "name": "Debug: Current File",
             "type": "debugpy",
             "request": "launch",
             "module": "scripts.${fileBasenameNoExtension}",
             "console": "integratedTerminal",
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
-            "envFile": "${workspaceFolder}/.userenv/.env.${env:USERNAME}"
         }
     ]
 }

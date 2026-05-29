@@ -1,4 +1,5 @@
-from models import DnCNN
+from modeling import DnCNN
+from modeling.metrics import PSNR
 from datasets import Flickr2K
 
 import lighter
@@ -77,7 +78,7 @@ def main():
         model.compile(
             torch.optim.Adam(model.parameters(), **config.optimizer),
             torch.nn.MSELoss(),
-            metrics=[lighter.metrics.PSNR()],
+            metrics=[PSNR()],
             device=device,
         )
 

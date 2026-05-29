@@ -5,6 +5,8 @@ import zipfile as zip
 from pathlib import Path
 from typing import Optional
 
+from datasets.preprocess._base import IMAGE_EXTS
+
 from utils.env import resolve_datasets_dir
 from utils.hashing import write_timestamp_marker
 
@@ -84,7 +86,7 @@ def ensure_fetched(
     subfolder.mkdir(parents=True, exist_ok=True)
     for item in flickr2k.iterdir():
         # don't move the target into itself
-        if item == subfolder:
+        if item == subfolder or item.suffix.lower() not in IMAGE_EXTS:
             continue
         item.rename(subfolder / item.name)
 

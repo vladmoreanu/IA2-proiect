@@ -1,4 +1,5 @@
-from models import DnCNN
+from modeling import DnCNN
+from modeling.metrics import PSNR
 from datasets import Flickr2K
 
 import lighter
@@ -54,8 +55,8 @@ def main():
             # number of samples per epoch for validation, None to ignore
             "num_samples_val": None,
             "validation_freq": 2,
-            "num_workers": 4,
-            "prefetch_factor": 8,
+            "num_workers": 2,
+            "prefetch_factor": 4,
             "chkpoint": "chkpoint/DnCNN_today.pt",
         }
     )
@@ -116,7 +117,7 @@ def main():
     model.compile(
         torch.optim.Adam(model.parameters(), lr=config.learning_rt),
         torch.nn.MSELoss(),
-        metrics=[lighter.metrics.PSNR()],
+        metrics=[PSNR()],
         device=device,
     )
 

@@ -4,10 +4,9 @@ n_splits    = 5
 [model]
 # num_of_layers       = 17
 
-# torch.nn.DataLoader(...)
 [dataloader]
 batch_size          = 16
-num_workers         = 4
+num_workers         = 2
 prefetch_factor     = 4
 pin_memory          = true
 persistent_workers  = true

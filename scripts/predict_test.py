@@ -1,35 +1,23 @@
-import torch
-from torch.utils.data import Dataset, DataLoader
+from utils import save_image, DEVICE
+from utils.env import resolve_datasets_dir
+from modeling import DnCNN
+from modeling.metrics import mse, psnr
+from datasets import Flickr2K
+# from datasets.preprocess.funcs import tile, untile
 
 from pathlib import Path
 
-from utils import save_image, DEVICE
-from utils.env import resolve_datasets_dir
-from models import DnCNN
-from datasets import Flickr2K
+import torch
+from torch.utils.data import Dataset, DataLoader
+import matplotlib.pyplot as plt
 
-from lighter.metrics import PSNR
-from torch.nn.functional import mse_loss
 
-CHECKPOINT = Path(
-    "/home/vladm/Facultate/S2/IA2-proiect/_fit/proiect/DnCNN_0/model_2026-05-28_f0.pt"
-)
+CHECKPOINT = Path("_fit/proiect/DnCNN_0/model_2026-05-28_f0.pth")
 OUTPUT_DIR = resolve_datasets_dir() / "Flickr2K/exemple/processed"
 TILE_SIZE = 128
-STRIDE = 96
+STRIDE = 64
 BATCH_SIZE = 4
-INDEX = 200
-
-
-class TileDataset(Dataset):
-    def __init__(self, tiles: torch.Tensor):
-        self.tiles = tiles  # (T, C, tile_size, tile_size)
-
-    def __len__(self):
-        return len(self.tiles)
-
-    def __getitem__(self, idx):
-        return self.tiles[idx]
+INDEX = 1000
 
 
 def tile(images: torch.Tensor, tile_size: int, stride: int) -> torch.Tensor:
@@ -79,6 +67,17 @@ def untile(
     return canvas
 
 
+class TileDataset(Dataset):
+    def __init__(self, tiles: torch.Tensor):
+        self.tiles = tiles  # (T, C, tile_size, tile_size)
+
+    def __len__(self):
+        return len(self.tiles)
+
+    def __getitem__(self, idx):
+        return self.tiles[idx]
+
+
 def main():
     dataset = Flickr2K(subset="pairs", tile_size=TILE_SIZE, device=DEVICE)
     noisy, clean = dataset[INDEX]
@@ -109,22 +108,37 @@ def main():
         n, t, c, th, tw
     )  # (1, T, C, tile_size, tile_size)
 
-    predicted = untile(predicted_tiles, noisy.shape, TILE_SIZE, STRIDE)  # (1, C, H, W)
+    # predicted = untile(predicted_tiles, 8, 8)  # (1, C, H, W)
+    predicted = untile(predicted_tiles, noisy.shape, TILE_SIZE, STRIDE)
 
-    print(mse_loss(clean, predicted))
-    psnr = PSNR()
-    psnr.update(clean, predicted)
-    print(psnr.result())
+    predicted = predicted.cpu()
+    clean = clean.cpu()
+    noisy = noisy.cpu()
 
-    predicted = (predicted * 255.0).to(torch.uint8)
-    clean = (clean * 255.0).to(torch.uint8)
-    noisy = (noisy * 255.0).to(torch.uint8)
+    print(f"MSE = {mse(clean, predicted).item():.4f}")
+    print(f"PSNR = {psnr(clean, predicted).item():.4f} dB")
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    save_image(predicted.squeeze(0), OUTPUT_DIR / "predicted.png")
-    save_image(clean.squeeze(0), OUTPUT_DIR / "clean.png")
-    save_image(noisy.squeeze(0), OUTPUT_DIR / "noisy.png")
+    to_24bit = lambda x :(x * 255.0).clamp(0, 255).to(torch.uint8).cpu()
+    to_hwc = lambda t: t.squeeze(0).permute(1, 2, 0).numpy()
 
+    predicted = to_24bit(predicted)
+    clean = to_24bit(clean)
+    noisy = to_24bit(noisy)
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 9))
+    axes[0].imshow(to_hwc(clean))
+    axes[0].set_title("Original")
+    axes[0].axis("off")
+    axes[1].imshow(to_hwc(noisy))
+    axes[1].set_title("Noisy input")
+    axes[1].axis("off")
+    axes[2].imshow(to_hwc(predicted))
+    axes[2].set_title("Predicted output")
+    axes[2].axis("off")
+
+    plt.tight_layout()
+    plt.show()
+    
 
 if __name__ == "__main__":
     main()
