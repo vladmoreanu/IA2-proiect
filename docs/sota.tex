@@ -57,6 +57,27 @@
 
 %===================================================================================================
 
+\cite{beyond_a_gaussian} & 
+Berkeley Segmentation Dataset & 
+
+DnCNN  & 
+
+Residual CNN
+
+Uses Conv + Batch Normalization + ReLU layers 
+
+DnCNN-S for known noise level and DnCNN-B as a blind model & 
+
+Residual learning: the model predicts the noise
+
+Uses batch normalization to prevent internal covariate shift &
+
+PSNR: 31 dB \\
+\hline
+
+[2] & ImageNet, COCO & YOLOv8, Faster R-CNN & Pre-trained weights, batch size 64 & Fine-tuning on target domain, anchor box optimization & mAP@50: 0.875 \\
+\hline
+
 %===================================================================================================
 \end{xltabular}
 
@@ -64,8 +85,9 @@
 % REFERENCES
 %===================================================================================================
 
-% \bibliography{bib/main}
-% \bibliographystyle{IEEEtran}
+\bibliographystyle{IEEEtran}
+
+\bibliography{references}
 
 \end{document}
 
