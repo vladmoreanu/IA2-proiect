@@ -10,7 +10,9 @@ class CSVLogger(Callback):
         dirs, _ = os.path.split(self.path)
         if not os.path.exists(dirs):
             os.makedirs(dirs)
-    
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
     def on_epoch_end(self, epoch, logs=None):
         log = {}
         for k, v in logs.items():

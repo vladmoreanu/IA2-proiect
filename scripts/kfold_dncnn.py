@@ -1,72 +1,91 @@
 from modeling import DnCNN
 from modeling.metrics import PSNR
+from modeling.callbacks import Reporter
 from datasets import Flickr2K
+from utils import DEVICE, subset_first_n_groups
+from utils.env import system_spec
 
 import lighter
 
-import toml
-from pathlib import Path
 import warnings
-from datetime import datetime
+from pathlib import Path
 from multiprocessing import freeze_support
+from datetime import datetime
 
 import torch
 from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import GroupKFold
 
 
-def subset_first_n_groups(dataset, n: int) -> Subset:
-    if dataset.groups is None:
-        raise ValueError("Dataset does not expose groups")
+RESULT_ROOT = Path("./results").resolve()
 
-    if n < 1:
-        raise ValueError("n must be >= 1")
-
-    seen = []
-    selected_indices = []
-
-    for idx, group in enumerate(dataset.groups):
-        if group not in seen:
-            if len(seen) >= n:
-                break
-            seen.append(group)
-
-        if group in seen:
-            selected_indices.append(idx)
-
-    subset = Subset(dataset, selected_indices)
-    subset.samples = [dataset.samples[i] for i in selected_indices]
-    subset.groups = [dataset.groups[i] for i in selected_indices]
-    return subset
+CONFIG = lighter.Config({
+        "name": "DnCNN-kfold-composed",
+        "report": "report-{time}-{fold}.json",
+        "dataloader": {
+            "batch_size": 16,
+            "num_workers": 2,
+            "prefetch_factor": 4,
+            "pin_memory": True,
+            "persistent_workers": True,
+        },
+        "validation": {
+            "n_splits": 5,
+        },
+        "model": {
+            "num_of_layers": 17,
+        },
+        "optimizer": {
+            "lr": 1e-3
+        },
+        "fit": {
+            "epochs": 10,
+            "validation_freq": 2,
+        },
+        "csv_log": {
+            "path": "logs/{time}-{fold}.csv"
+        },
+        "checkpoint": {
+            "filepath": "checkpoints/{time}-{fold}.pth",
+            "save_best_only": True,
+        }
+    })
 
 
 def main():
+    config = CONFIG
+    root = RESULT_ROOT / config.name
+
+    root.mkdir(parents=True, exist_ok=True)
+
+    time = datetime.now().date()
+
+    conf_path = root / "conf-{time}.json".format(time=time)
+    with open(conf_path, "w", encoding="utf-8") as fp:
+        fp.write(config.to_json())
+
     warnings.filterwarnings(
         action="ignore", category=UserWarning, message="TypedStorage is deprecated"
     )
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("System :")
-    print(f"  PyTorch version: {torch.__version__}")
-    print(f"  CUDA available: {torch.cuda.is_available()}")
-    print(f"  CUDA version PyTorch expects: {torch.version.cuda}")
-    print(f"  Using device: {device}")
+    device = DEVICE
+    system_spec(device)
 
-    config_path = Path("_fit/proiect/DnCNN_0.toml")
-    config = lighter.Config(toml.load(config_path))
-
-    out_dir = config_path.parent
-    out_name = config_path.stem
-
-    dataset = Flickr2K("tiled_pairs", device=device)
+    dataset = Flickr2K("tiled_pairs")
 
     ds = subset_first_n_groups(dataset, 100)
 
-    gkf = GroupKFold(**config.cross_validation)
+    gkf = GroupKFold(**config.validation)
 
-    for fold, (train_idx, val_idx) in enumerate(
+    for i, (train_idx, val_idx) in enumerate(
         gkf.split(ds.samples, groups=ds.groups)
     ):
+        fold = i+1
+        print(
+            "="*80+"\n"
+            f"FOLD {fold}/{config.validation.n_splits}" + "\n"
+            "="*80+"\n" 
+            )
         train_ds = Subset(ds, train_idx)
         val_ds = Subset(ds, val_idx)
 
@@ -76,40 +95,41 @@ def main():
         model = DnCNN(**config.model)
 
         model.compile(
-            torch.optim.Adam(model.parameters(), **config.optimizer),
+            torch.optim.Adam(model.parameters(), lr=config.learning_rt),
             torch.nn.MSELoss(),
             metrics=[PSNR()],
             device=device,
         )
 
-        today = datetime.now().date()
-
-        checkpoint_path = "model_{time}_f{fold}.pt".format(
+        path_kwargs = dict(
+            time=time,
             fold=fold,
-            time=today,
         )
-        checkpoint_path = str(out_dir / out_name / checkpoint_path)
 
-        log_path = "{name}_logs_{time}_f{fold}.csv".format(
-            name=out_name,
-            fold=fold,
-            time=today,
-        )
-        log_path = str(out_dir / log_path)
+        csv_path = root / config.csv_log.path.format(**path_kwargs)
+        chkpoint_path = root / config.checkpoint.filepath.format(**path_kwargs)
+        report_path = root / config.report.format(**path_kwargs)
+
+        config["csv_log.path", "checkpoint.filepath"] = csv_path, chkpoint_path
 
         hist = model.fit(
             train_loader,
             validation_loader=val_loader,
             callbacks=[
-                lighter.callbacks.CSVLogger(log_path),
-                lighter.callbacks.Checkpoint(
-                    checkpoint_path,
-                    save_best_only=True,
-                ),
+                lighter.callbacks.CSVLogger(**config.csv_log),
+                lighter.callbacks.Checkpoint(**config.checkpoint),
             ],
-            **config.fit,
+            **config.fit
         )
 
+        model.load(chkpoint_path)
+
+        model.evaluate(
+            data_loader=val_loader,
+            callbacks=[
+                Reporter(report_path, hist.params)
+            ]
+        )
 
 if __name__ == "__main__":
     freeze_support()

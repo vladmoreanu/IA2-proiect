@@ -1,118 +1,91 @@
 from modeling import DnCNN
 from modeling.metrics import PSNR
+from modeling.callbacks import Reporter
 from datasets import Flickr2K
+from utils import DEVICE, subset_first_n_groups
+from utils.env import system_spec
 
 import lighter
 
 import warnings
+from pathlib import Path
 from multiprocessing import freeze_support
+from datetime import datetime
 
 import torch
-from torch.utils.data import DataLoader, RandomSampler, Subset
+from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import GroupShuffleSplit
 
 
-def subset_first_n_groups(dataset, n: int) -> Subset:
-    if dataset.groups is None:
-        raise ValueError("Dataset does not expose groups")
+RESULT_ROOT = Path("./results").resolve()
 
-    if n < 1:
-        raise ValueError("n must be >= 1")
-
-    seen = []
-    selected_indices = []
-
-    for idx, group in enumerate(dataset.groups):
-        if group not in seen:
-            if len(seen) >= n:
-                break
-            seen.append(group)
-
-        if group in seen:
-            selected_indices.append(idx)
-
-    subset = Subset(dataset, selected_indices)
-    subset.samples = [dataset.samples[i] for i in selected_indices]
-    subset.groups = [dataset.groups[i] for i in selected_indices]
-    return subset
+CONFIG = lighter.Config({
+        "name": "DnCNN-composed",
+        "report": "report-{time}.json",
+        "dataloader": {
+            "batch_size": 16,
+            "num_workers": 2,
+            "prefetch_factor": 4,
+            "pin_memory": True,
+            "persistent_workers": True,
+        },
+        "validation": {
+            "test_size": 0.2,
+        },
+        "model": {
+            "num_of_layers": 17,
+        },
+        "optimizer": {
+            "lr": 1e-3
+        },
+        "fit": {
+            "epochs": 10,
+            "validation_freq": 2,
+        },
+        "csv_log": {
+            "path": "logs/{time}.csv"
+        },
+        "checkpoint": {
+            "filepath": "checkpoints/{time}.pth",
+            "save_best_only": True,
+        }
+    })
 
 
 def main():
+    config = CONFIG
+    root = RESULT_ROOT / config.name
+
+    root.mkdir(parents=True, exist_ok=True)
+
+    time = datetime.now()
+
+    conf_path = root / "conf-{time}.json".format(time)
+    with open(conf_path, "w", encoding="utf-8") as fp:
+        fp.write(config.to_json())
+
     warnings.filterwarnings(
         action="ignore", category=UserWarning, message="TypedStorage is deprecated"
     )
 
-    config = lighter.Config(
-        {
-            "batch_size": 16,
-            "test_size": 0.2,
-            # 9  # default 17
-            "num_of_layers": 17,
-            "epochs": 10,
-            "learning_rt": 1e-3,
-            # number of samples per epoch for train, None to ignore
-            "num_samples_train": None,
-            # number of samples per epoch for validation, None to ignore
-            "num_samples_val": None,
-            "validation_freq": 2,
-            "num_workers": 2,
-            "prefetch_factor": 4,
-            "chkpoint": "chkpoint/DnCNN_today.pt",
-        }
-    )
+    device = DEVICE
+    system_spec(device)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("System :")
-    print(f"  PyTorch version: {torch.__version__}")
-    print(f"  CUDA available: {torch.cuda.is_available()}")
-    print(f"  CUDA version PyTorch expects: {torch.version.cuda}")
-    print(f"  Using device: {device}")
-
-    dataset = Flickr2K("tiled_pairs", device=device)
+    dataset = Flickr2K("tiled_pairs")
 
     ds = subset_first_n_groups(dataset, 100)
 
-    gss = GroupShuffleSplit(test_size=0.2, random_state=0)
+    gss = GroupShuffleSplit(random_state=0, **config.validation)
 
     train_idx, val_idx = next(gss.split(ds.samples, groups=ds.groups))
 
     train_ds = Subset(ds, train_idx)
     val_ds = Subset(ds, val_idx)
 
-    if config.num_samples_train is not None:
-        shuffle = None
-        sampler = RandomSampler(
-            train_ds, num_samples=config.num_samples_train, replacement=True
-        )
-    else:
-        shuffle = True
-        sampler = None
+    train_loader = DataLoader(train_ds, shuffle=True, **config.dataloader)
+    val_loader = DataLoader(val_ds, shuffle=False, **config.dataloader)
 
-    # if config.num_samples_val is not None:
-    #     val_indices = random.sample(range(len(val_ds)), config.num_samples_val)
-    #     val_ds = Subset(val_ds, val_indices)
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=config.batch_size,
-        shuffle=shuffle,
-        sampler=sampler,
-        num_workers=config.num_workers,
-        prefetch_factor=config.prefetch_factor,
-        pin_memory=True,
-        persistent_workers=True,
-    )
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=config.batch_size,
-        shuffle=False,
-        num_workers=config.num_workers,
-        prefetch_factor=config.prefetch_factor,
-        pin_memory=True,
-        persistent_workers=True,
-    )
-
-    model = DnCNN(num_of_layers=config.num_of_layers)
+    model = DnCNN(**config.model)
 
     model.compile(
         torch.optim.Adam(model.parameters(), lr=config.learning_rt),
@@ -121,16 +94,34 @@ def main():
         device=device,
     )
 
-    hist = model.fit(
-        train_loader,
-        epochs=config.epochs,
-        validation_loader=val_loader,
-        validation_freq=config.validation_freq,
-        callbacks=[
-            lighter.callbacks.Checkpoint(config.chkpoint),
-        ],
+    path_kwargs = dict(
+        time=time
     )
 
+    csv_path = root / config.csv_log.path.format(**path_kwargs)
+    chkpoint_path = root / config.checkpoint.filepath.format(**path_kwargs)
+    report_path = root / config.report.format(**path_kwargs)
+
+    config["csv_log.path", "checkpoint.filepath"] = csv_path, chkpoint_path
+
+    hist = model.fit(
+        train_loader=train_loader,
+        validation_loader=val_loader,
+        callbacks=[
+            lighter.callbacks.CSVLogger(**config.csv_log),
+            lighter.callbacks.Checkpoint(**config.checkpoint),
+        ],
+        **config.fit
+    )
+
+    model.load(chkpoint_path)
+
+    model.evaluate(
+        data_loader=val_loader,
+        callbacks=[
+            Reporter(report_path, hist.params)
+        ]
+    )
 
 if __name__ == "__main__":
     freeze_support()

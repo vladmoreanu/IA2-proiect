@@ -5,10 +5,16 @@ class Callback():
     Provides interface:
     - on_epoch_begin
     - on_epoch_end
+    - on_train_begin
+    - on_train_end
     - on_train_batch_begin
     - on_train_batch_end
+    - on_val_begin
+    - on_val_end
     - on_val_batch_begin
     - on_val_batch_end
+    - on_predict_begin
+    - on_predict_end
     - on_predict_batch_begin
     - on_predict_batch_end
     '''
@@ -180,7 +186,7 @@ class Callback():
 
         Args:
             logs: Dict. Currently the output of the last call to
-              `on_test_batch_end()` is passed to this argument for this method
+              `on_val_batch_end()` is passed to this argument for this method
               but that may change in the future.
         """
 
