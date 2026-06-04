@@ -118,6 +118,35 @@ introduce cross-attention layers into the diffusion UNet, making them incredibly
 multi-modal conditioning. \cite{High-Resolution_image}
 
 
+\begin{table}[h]
+\centering
+\caption{SOTA Results}
+\label{tab:sota}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Model} & \textbf{PSNR} & \textbf{Dataset} \\
+\hline
+DnCNN-B\cite{beyond_a_gaussian} & 26.9 dB & $\sigma$ = 50 \\
+\hline
+FFDNet\cite{FFDNet} & 28 dB & $\sigma$ = 50 \\
+\hline
+DeblurGAN-Comb\cite{Deblurgan} & 28.7 dB & GoPro Dataset \\
+\hline
+MIMO-Unet++\cite{Rethinking} & 32.6 dB & GoPro Dataset \\
+\hline
+SwinIR\cite{Swinir} & 29.8 dB & $\sigma$ = 50 \\
+\hline
+Uformer\cite{Uformer} & 39.9 dB & SIDD dataset \\
+\hline
+Uformer\cite{Uformer} & 33 dB & GoPro Dataset \\
+\hline
+Restormer\cite{Restormer} & 32.9 dB & GoPro Dataset \\
+\hline
+Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
+\hline
+\end{tabular}
+\end{table}
+
 %===================================================================================================
 % 
 %===================================================================================================
