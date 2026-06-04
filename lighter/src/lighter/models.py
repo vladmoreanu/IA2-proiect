@@ -5,6 +5,7 @@ import torch
 
 import os
 
+
 class Model(torch.nn.Module):
     history: History
 
@@ -24,16 +25,11 @@ class Model(torch.nn.Module):
         self,
         filepath,
     ):
-        self.load_state_dict(torch.load(
-            filepath,
-            map_location=self.device,
-            weights_only=True
-        ))
+        self.load_state_dict(
+            torch.load(filepath, map_location=self.device, weights_only=True)
+        )
 
-    def forward(
-        self,
-        x
-    ):
+    def forward(self, x):
         return x
 
     def compile(
@@ -41,25 +37,25 @@ class Model(torch.nn.Module):
         optimizer=None,
         loss=None,
         # loss_weights=None,
-        metrics : list[Metric] = None,
+        metrics: list[Metric] = None,
         # weighted_metrics=None,
         # run_eagerly=False,
         # steps_per_execution=1,
         # jit_compile="auto",
         # auto_scale_loss=True,
-        device='cpu',
+        device="cpu",
     ):
-        self.optimizer  = optimizer
-        self.loss_fn    = loss
-        self.metrics    = [Loss()] + metrics
-        self.device     = device
+        self.optimizer = optimizer
+        self.loss_fn = loss
+        self.metrics = [Loss()] + metrics
+        self.device = device
 
         self.to(self.device)
 
     def step(
         self,
         data_loader,
-        training : bool = False,
+        training: bool = False,
     ):
         """
         Single-iteration function, either for training or for testing.
@@ -67,7 +63,7 @@ class Model(torch.nn.Module):
         :param dataloader: torch.utils.data.DataLoader object to iterate over
         """
         self.train() if training else self.eval()
-        pfx = 'train_' if training else 'val_'
+        pfx = "train_" if training else "val_"
 
         for metric in self.metrics:
             metric.reset()
@@ -78,13 +74,13 @@ class Model(torch.nn.Module):
             # Forward pass
             if training:
                 self.callbacks.on_train_batch_begin(idx)
-                
+
                 outputs = self(inputs)
-                loss = self.loss_fn(outputs, targets) 
+                loss = self.loss_fn(outputs, targets)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                
+
             else:
                 self.callbacks.on_val_batch_begin(idx)
                 with torch.no_grad():
@@ -93,20 +89,20 @@ class Model(torch.nn.Module):
 
             # Metrics update state
             for metric in self.metrics:
-                if metric.name == 'loss':
+                if metric.name == "loss":
                     metric.update(loss.item())
                 else:
                     metric.update(targets, outputs)
 
             # Create the log (metrics) of this batch
-            batch_log = { (pfx + x.name):x.result() for x in self.metrics }
+            batch_log = {(pfx + x.name): x.result() for x in self.metrics}
             if training:
                 self.callbacks.on_train_batch_end(idx, batch_log)
             else:
                 self.callbacks.on_val_batch_end(idx, batch_log)
 
         # Create and return the log (metrics) of this epoch
-        return { (pfx + x.name):x.result() for x in self.metrics }
+        return {(pfx + x.name): x.result() for x in self.metrics}
 
     def fit(
         self,
@@ -131,20 +127,20 @@ class Model(torch.nn.Module):
         self.to(self.device)
 
         self.callbacks = CallbackList(
-            callbacks = (callbacks or []) + [History(), PBar()],
-            model = self,
-            epochs = epochs,
-            steps = len(train_loader),
-            val_steps = len(validation_loader),
-            val_freq = validation_freq,
+            callbacks=(callbacks or []) + [History(), PBar()],
+            model=self,
+            epochs=epochs,
+            steps=len(train_loader),
+            val_steps=len(validation_loader),
+            val_freq=validation_freq,
         )
 
         self.callbacks.on_train_begin()
 
-        for e in range(1, epochs+1):
+        for e in range(1, epochs + 1):
             self.callbacks.on_epoch_begin(e)
 
-            log = self.step(train_loader, training = True)
+            log = self.step(train_loader, training=True)
             if (validation_loader is not None) & (e % validation_freq == 0):
                 val_log = self.step(validation_loader)
                 log |= val_log
@@ -168,9 +164,9 @@ class Model(torch.nn.Module):
         self.to(self.device)
 
         self.callbacks = CallbackList(
-            callbacks = (callbacks or []) + [History(), PBar()],
-            model = self,
-            steps = len(data_loader)
+            callbacks=(callbacks or []) + [History(), PBar()],
+            model=self,
+            steps=len(data_loader),
         )
 
         self.callbacks.on_val_begin()
@@ -191,7 +187,7 @@ class Model(torch.nn.Module):
         # batch_size=None,
         # verbose="auto",
         # steps=None,
-        callbacks=None
+        callbacks=None,
     ):
         self.to(self.device)
 
@@ -219,3 +215,4 @@ class Model(torch.nn.Module):
         self.callbacks.on_predict_end()
 
         return torch.cat(all_outputs)
+

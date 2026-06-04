@@ -6,11 +6,15 @@ from torchvision.transforms.functional import gaussian_blur
 def blur(images: torch.Tensor, kernel_size: int, kernel_sigma: float) -> torch.Tensor:
     # Cast to float32 before blurring — gaussian_blur on uint8 does integer
     # arithmetic and truncates intermediate values, producing wrong results.
-    return gaussian_blur(
-        images.to(torch.float32),
-        kernel_size=[kernel_size, kernel_size],
-        sigma=kernel_sigma,
-    )
+    out = images.to(torch.float32)
+    if not kernel_sigma == 0.0:
+        out = gaussian_blur(
+            out,
+            kernel_size=[kernel_size, kernel_size],
+            sigma=kernel_sigma,
+        )
+        
+    return out
 
 
 def noise(images: torch.Tensor, sigma: float) -> torch.Tensor:

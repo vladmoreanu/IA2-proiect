@@ -12,8 +12,8 @@ from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 
 
-CHECKPOINT = Path("_fit/proiect/DnCNN_0/model_2026-05-28_f0.pth")
-OUTPUT_DIR = resolve_datasets_dir() / "Flickr2K/exemple/processed"
+CHECKPOINT = Path("results/DnCNN_0/model_2026-05-28_f0.pth")
+# OUTPUT_DIR = resolve_datasets_dir() / "Flickr2K/exemple/processed"
 TILE_SIZE = 128
 STRIDE = 64
 BATCH_SIZE = 4

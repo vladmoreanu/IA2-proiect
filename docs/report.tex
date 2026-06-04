@@ -11,9 +11,15 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{csvsimple}
+\usepackage{subcaption}
+
+\usepackage{siunitx}
+\sisetup{round-mode=places, round-precision=2}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
 
 %===================================================================================================
 % CONTENT
@@ -39,65 +45,77 @@
 %===================================================================================================
 \section{State-Of-The-Art}
 
-The landscape of image restoration and synthesis has advanced rapidly,
-moving from highly optimized Convolutional Neural Networks (CNNs) to highly efficient Vision Transformers and diffusion models.
-Each state-of-the-art (SOTA) model introduces distinct architectural innovations to overcome the trade-offs between computational cost and restoration accuracy
+The landscape of image restoration and synthesis has advanced rapidly, moving from highly optimized
+Convolutional Neural Networks (CNNs) to highly efficient Vision Transformers and diffusion models.
+Each state-of-the-art (SOTA) model introduces distinct architectural innovations to overcome the
+trade-offs between computational cost and restoration accuracy
 
 \subsection{Convolutional Neural Networks}
 
-DnCNN (Denoising Convolutional Neural Network) introduces a residual learning strategy combined with batch normalization.
-Instead of predicting the clean image directly, the model learns to predict the residual noise.
-This speeds up training, stabilizes the network and allows a single model (DnCNN-B) to handle blind gaussian denoising. \cite{beyond_a_gaussian}
+DnCNN (Denoising Convolutional Neural Network) introduces a residual learning strategy combined with
+batch normalization. Instead of predicting the clean image directly, the model learns to predict the
+residual noise. This speeds up training, stabilizes the network and allows a single model (DnCNN-B)
+to handle blind gaussian denoising. \cite{beyond_a_gaussian}
 
 This strategy allowed DnCNN-B to outperform AR-CNN, a specialized model, by 0.3 dB in PSNR.
 
-FFDNet brings a tunable noise level map as a direct input, allowing a single network to flexibly handle complex, non-uniform noise.
-Additionally, it processes the image in a downsampled sub-image space, which vastly improves inference speed and expands the receptive field without losing modeling capacity. \cite{FFDNet}
+FFDNet brings a tunable noise level map as a direct input, allowing a single network to flexibly
+handle complex, non-uniform noise. Additionally, it processes the image in a downsampled sub-image
+space, which vastly improves inference speed and expands the receptive field without losing modeling
+capacity. \cite{FFDNet}
 
-This model can keep a performance of 26-27 dB PSNR across a vast noise level range, while being significantly faster then DnCNN.
+This model can keep a performance of 26-27 dB PSNR across a vast noise level range, while being
+significantly faster then DnCNN.
 
 \subsection{High-Efficiency and Adversarial Architectures}
 
-DeblurGAN approaches blind motion deblurring as an image-to-image translation task using Conditional Generative Adversarial Networks (cGANs).
-This introduces a multi-component loss function, combining WGAN-GP and perceptual loss, to generate sharp and realistic textures
-rather than the overly smooth results found in basic CNNs. It's efficient architercture makes it 5 times faster than other models,
-making it a good choice for downstream object detectuin tasks. 
-On the GoPro dataset, it achieved a PSNR of 29.7 dB and an SSIM of 0.958. \cite{Deblurgan}
+DeblurGAN approaches blind motion deblurring as an image-to-image translation task using Conditional
+Generative Adversarial Networks (cGANs). This introduces a multi-component loss function, combining
+WGAN-GP and perceptual loss, to generate sharp and realistic textures rather than the overly smooth
+results found in basic CNNs. It's efficient architercture makes it 5 times faster than other models,
+making it a good choice for downstream object detectuin tasks. On the GoPro dataset, it achieved a
+PSNR of 29.7 dB and an SSIM of 0.958. \cite{Deblurgan}
 
-MIMO-UNet brings the re-engineering of the coarse-to-fine strategy into a single U-Net.
-It uses a Multi-Input Single Encoder (MISE) to process multi-scale blurry images simultaneously,
-and a Multi-Output Single Decoder (MOSD) to output multiple deblurred images,
-achieving SOTA accuracy while running over 4 times faster than previous complex models. \cite{Rethinking}
+MIMO-UNet brings the re-engineering of the coarse-to-fine strategy into a single U-Net. It uses a
+Multi-Input Single Encoder (MISE) to process multi-scale blurry images simultaneously, and a
+Multi-Output Single Decoder (MOSD) to output multiple deblurred images, achieving SOTA accuracy
+while running over 4 times faster than previous complex models. \cite{Rethinking}
 
-The largest model (MIMO-Unet++) has a PSNR of 32.68 dB on the GoPro dataset, with a processing time of 0.004 seconds.
+The largest model (MIMO-Unet++) has a PSNR of 32.68 dB on the GoPro dataset, with a processing time
+of 0.004 seconds.
 
 \subsection{Vision Transformers}
 
-SwinIR, based on the Swin transformer, replaces traditional convolution layers with Residual Swin Transformer Blocks (RSTB).
-This has the advantage of local attention processing and shifted-window mechanisms for modeling long range dependencies.
-The model. For the super-resolution task it has achieved a PSNR of 32.7 dB, while having significantly less parameters than models with the same results. \cite{Swinir}
+SwinIR, based on the Swin transformer, replaces traditional convolution layers with Residual Swin
+Transformer Blocks (RSTB). This has the advantage of local attention processing and shifted-window
+mechanisms for modeling long range dependencies. The model. For the super-resolution task it has
+achieved a PSNR of 32.7 dB, while having significantly less parameters than models with the same
+results. \cite{Swinir}
 
-Uformer brings transformer capabilities into a classic U-shaped arhitecture.
-It's contribution is the Locally-enhaced Window (LeWin) Transformer block,
-which calculates self-attention only within non-overlapping windows to reduce computational complexity.
-It also introduces a learnable multi-scale restoration modulator to handle varied image degradations. \cite{Uformer}
+Uformer brings transformer capabilities into a classic U-shaped arhitecture. It's contribution is
+the Locally-enhaced Window (LeWin) Transformer block, which calculates self-attention only within
+non-overlapping windows to reduce computational complexity. It also introduces a learnable
+multi-scale restoration modulator to handle varied image degradations. \cite{Uformer}
 
-On image denoising, Uformer achieved 39.9 dB in PSNR, outperforming heavier models.
-For debluring, on the GoPro dataset, the model obtained a result of 33 dB 
+On image denoising, Uformer achieved 39.9 dB in PSNR, outperforming heavier models. For debluring,
+on the GoPro dataset, the model obtained a result of 33 dB 
 
-Restormer brings Multi-Dconv Head Transposed Attention (MDTA), 
-which calculates self-attention across the feature (channel) dimension rather than the spatial dimension,
-bringing the self-attention complexity down to a linear scale, which is quadratic for normal transformers.
-It also introduces a Gated-Dconv Feed-Forward Network (GDFN) to act as a filter for less important features.
-For the task of denoising, it has achived a PSNR of 40 dB, and 33 dB for deblurring. \cite{Restormer}
+Restormer brings Multi-Dconv Head Transposed Attention (MDTA), which calculates self-attention
+across the feature (channel) dimension rather than the spatial dimension, bringing the
+self-attention complexity down to a linear scale, which is quadratic for normal transformers. It
+also introduces a Gated-Dconv Feed-Forward Network (GDFN) to act as a filter for less important
+features. For the task of denoising, it has achived a PSNR of 40 dB, and 33 dB for deblurring.
+\cite{Restormer}
 
 \subsection{Generative Synthesis}
 
-While diffusion models are powerful, calculating them directly in pixel space is incredibly slow and expensive.
-Latent Diffusion Models (LDM) bring the innovation of decoupling perceptual and semantic compression.
-By first training an autoencoder to compress images into a lower-dimensional latent space, the diffusion process can occur much more efficiently.
-This allows the model to strike a near-optimal balance between complexity reduction and detail preservation.
-Furthermore, LDMs introduce cross-attention layers into the diffusion UNet, making them incredibly flexible for multi-modal conditioning. \cite{High-Resolution_image}
+While diffusion models are powerful, calculating them directly in pixel space is incredibly slow and
+expensive. Latent Diffusion Models (LDM) bring the innovation of decoupling perceptual and semantic
+compression. By first training an autoencoder to compress images into a lower-dimensional latent
+space, the diffusion process can occur much more efficiently. This allows the model to strike a
+near-optimal balance between complexity reduction and detail preservation. Furthermore, LDMs
+introduce cross-attention layers into the diffusion UNet, making them incredibly flexible for
+multi-modal conditioning. \cite{High-Resolution_image}
 
 
 %===================================================================================================
@@ -105,8 +123,32 @@ Furthermore, LDMs introduce cross-attention layers into the diffusion UNet, maki
 %===================================================================================================
 \section{Method and Dataset Description}
 
-
 \lipsum[1-3]
+
+\begin{table}
+    \centering
+    \caption{Dataset statistics with blur and noise parameters.}
+    \label{tab:dataset_stats}
+    \csvreader[
+    tabular = r|ccc|cc,
+    table head = \hline
+        \bfseries \# &
+        \bfseries Ker. S. &
+        \bfseries B. $\sigma$ &
+        \bfseries N. $\sigma$ &
+        \bfseries PSNR &
+        \bfseries MSE \\\hline\hline,
+    late after last line = \\\hline]%
+    {../results/dataset_stats.csv}
+    {2=\kernelsize, 3=\blursigma, 4=\noisesigma, 5=\psnr, 6=\mse}{
+    \thecsvrow &
+    \kernelsize &
+    \blursigma &
+    \noisesigma &
+    \num{\psnr} &
+    \num[scientific-notation=true, round-precision=2]{\mse}
+    }
+\end{table}
 
 %===================================================================================================
 % 
@@ -114,6 +156,25 @@ Furthermore, LDMs introduce cross-attention layers into the diffusion UNet, maki
 \section{Experiments and Results}
 
 \lipsum[1-3]
+
+\begin{table}
+    \centering
+    \caption{Average result per dataset.}
+    \label{tab:results_summary}
+    \csvreader[
+    tabular = r|ccc|cc,
+    table head = \hline
+        \bfseries \# &
+        \bfseries PSNR (dB) &
+        \bfseries MSE \\\hline\hline,
+    late after last line = \\\hline]
+    {../results/DnCNN-kfold-composed/summary_2026-06-03_12-42.csv}
+    {2=\psnr, 3=\mse}{
+    \thecsvrow &
+    \num{\psnr} &
+    \num[scientific-notation=true, round-precision=2]{\mse}
+    }
+\end{table}
 
 %===================================================================================================
 % CONCLUSIONS
@@ -123,11 +184,161 @@ Furthermore, LDMs introduce cross-attention layers into the diffusion UNet, maki
 \lipsum[1]
 
 %===================================================================================================
+% APPENDIX
+%===================================================================================================
+\onecolumn
+\setlength{\columnwidth}{\textwidth}
+\appendix
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_00/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_00/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 1 - Validation curves}
+  \label{fig:ds0_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_01/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_01/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 2 - Validation curves}
+  \label{fig:ds1_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_02/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_02/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 3 - Validation curves}
+  \label{fig:ds2_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_03/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_03/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 4 - Validation curves}
+  \label{fig:ds3_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_04/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_04/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 5 - Validation curves}
+  \label{fig:ds4_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_05/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_05/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 6 - Validation curves}
+  \label{fig:ds5_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_06/plot_loss-2026-06-03_12-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_06/plot_psnr-2026-06-03_12-42.png}
+  \end{subfigure}
+  \caption{Dataset 7 - Validation curves}
+  \label{fig:ds6_folds}
+\end{figure}
+
+%===================================================================================================
 % BILBIOGRAPHY
 %===================================================================================================
+\clearpage
+\twocolumn
 \bibliographystyle{IEEEtran}
-\bibliography{references}
+\bibliography{references.bib}
+                            
+                            % COLUMN FITTING FIGURE
+                            % \begin{figure}[!t]
+                            %   \centering
+                            %   \includegraphics[width=\columnwidth]{figures/your_image}
+                            %   \caption{Your caption here. IEEE captions are full sentences ending with a period.}
+                            %   \label{fig:your_label}
+                            % \end{figure}
+                            
+                            % COLUMN SPANNING FIGURE
+                            % \begin{figure*}[!t]
+                            %   \centering
+%   \includegraphics[width=\textwidth]{figures/your_image}
+%   \caption{Your caption here.}
+%   \label{fig:your_label}
+% \end{figure*}
 
+% SIDE BY SIDE SUBFIGURES
+% \usepackage{subcaption}
 
+% \begin{figure}[!t]
+%   \centering
+%   \begin{subfigure}[t]{0.48\columnwidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/image_a}
+%     \caption{First subfigure.}
+%     \label{fig:label_a}
+%   \end{subfigure}
+%   \hfill
+%   \begin{subfigure}[t]{0.48\columnwidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/image_b}
+%     \caption{Second subfigure.}
+%     \label{fig:label_b}
+%   \end{subfigure}
+%   \caption{Overall caption describing both subfigures.}
+%   \label{fig:label_overall}
+% \end{figure}
 
 \end{document}

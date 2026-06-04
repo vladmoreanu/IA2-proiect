@@ -1,32 +1,48 @@
-import torch
-import torch.utils.data as torchdata
+from utils import DEVICE, system_spec
+from datasets.preprocess.workers import BlurParams
 from datasets import Flickr2K
 
 from multiprocessing import freeze_support
 
+DATASET_ARGS = [
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=5.0),
+        noise_sigma=0.0,
+    ),
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=10.0),
+        noise_sigma=0.0,
+    ),
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=15.0),
+        noise_sigma=0.0,
+    ),
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=0.0),
+        noise_sigma=15.0,
+    ),
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=0.0),
+        noise_sigma=20.0,
+    ),
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=0.0),
+        noise_sigma=25.0,
+    ),
+    dict(
+        blur_params=BlurParams(kernel_size=5, kernel_sigma=10.0),
+        noise_sigma=15.0,
+    ),
+]
+
+
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("System :")
-    print(f"  PyTorch version: {torch.__version__}")
-    print(f"  CUDA available: {torch.cuda.is_available()}")
-    print(f"  CUDA version PyTorch expects: {torch.version.cuda}")
-    print(f"  Using device: {device}")
+    device = DEVICE
+    system_spec(device)
 
-    device = torch.device(device)
-    dataset = Flickr2K("tiled_pairs", device=device)
+    for i in range(len(DATASET_ARGS)):
+        Flickr2K(subset="tiled_pairs", **DATASET_ARGS[i])
 
-    print(len(dataset))
-
-    # ###
-
-    # subset = torchdata.Subset(dataset, range(100))
-
-    # dataloader = torchdata.DataLoader(
-    #     subset,
-    #     batch_size=5
-    # )
-    # print(len(subset))
-    # print(len(dataloader))
 
 if __name__ == "__main__":
     freeze_support()

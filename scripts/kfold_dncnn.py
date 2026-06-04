@@ -7,21 +7,40 @@ from utils.env import system_spec
 
 import lighter
 
+import sys
+import json
 import warnings
 from pathlib import Path
 from multiprocessing import freeze_support
 from datetime import datetime
+from typing import Optional
 
+import typer
 import torch
 from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import GroupKFold
 
+from .cache_flickr2k import DATASET_ARGS
+
 
 RESULT_ROOT = Path("./results").resolve()
 
-CONFIG = lighter.Config({
+CONFIG = lighter.Config(
+    {
         "name": "DnCNN-kfold-composed",
-        "report": "report-{time}-{fold}.json",
+        "report": "report-{time}.json",
+        "dataset": {
+            "subset": "tiled_pairs",
+            "resize": 1024,
+            "blur_params": {
+                "kernel_size": 5,
+                "kernel_sigma": 10.0,
+            },
+            "noise_sigma": 15.0,
+            "tile_size": 128,
+            "cache_batch_size": 32,
+        },
+        "subset_size": 100,
         "dataloader": {
             "batch_size": 16,
             "num_workers": 2,
@@ -35,102 +54,156 @@ CONFIG = lighter.Config({
         "model": {
             "num_of_layers": 17,
         },
-        "optimizer": {
-            "lr": 1e-3
-        },
+        "optimizer": {"lr": 1e-3},
         "fit": {
             "epochs": 10,
-            "validation_freq": 2,
+            # "validation_freq": 2,
         },
-        "csv_log": {
-            "path": "logs/{time}-{fold}.csv"
-        },
+        "csv_log": {"path": "logs/{time}-{fold}.csv"},
         "checkpoint": {
             "filepath": "checkpoints/{time}-{fold}.pth",
             "save_best_only": True,
-        }
-    })
+        },
+    }
+)
 
 
-def main():
-    config = CONFIG
-    root = RESULT_ROOT / config.name
+app = typer.Typer()
+
+@app.command()
+def main(time: Optional[str] = typer.Argument(None), only_ds: Optional[int] = typer.Option(None, "--only-ds")):
+    base_config = CONFIG
+    root = RESULT_ROOT / base_config.name
 
     root.mkdir(parents=True, exist_ok=True)
 
-    time = datetime.now().date()
-
-    conf_path = root / "conf-{time}.json".format(time=time)
-    with open(conf_path, "w", encoding="utf-8") as fp:
-        fp.write(config.to_json())
+    time = time or datetime.now().strftime("%Y-%m-%d_%H-%M")
 
     warnings.filterwarnings(
         action="ignore", category=UserWarning, message="TypedStorage is deprecated"
     )
 
+    csv_fmt = base_config.csv_log.path
+    chkpoint_fmt = base_config.checkpoint.filepath
+
     device = DEVICE
     system_spec(device)
 
-    dataset = Flickr2K("tiled_pairs")
+    for ds_idx, ds_args in enumerate(DATASET_ARGS):
+        if only_ds is not None and ds_idx != only_ds:
+            continue
 
-    ds = subset_first_n_groups(dataset, 100)
+        # Flatten BlurParams into a plain dict so it serialises cleanly
+        serialisable_ds_args = {
+            **ds_args,
+            "blur_params": ds_args["blur_params"]._asdict(),
+        }
 
-    gkf = GroupKFold(**config.validation)
+        # Build a fresh run config from the base for each dataset
+        run_config = lighter.Config(dict(base_config))
+        run_config["dataset"] = {**base_config.dataset, **serialisable_ds_args}
 
-    for i, (train_idx, val_idx) in enumerate(
-        gkf.split(ds.samples, groups=ds.groups)
-    ):
-        fold = i+1
-        print(
-            "="*80+"\n"
-            f"FOLD {fold}/{config.validation.n_splits}" + "\n"
-            "="*80+"\n" 
+        ds_root = root / f"ds_{ds_idx:02d}"
+        ds_root.mkdir(parents=True, exist_ok=True)
+
+        report_path = ds_root / base_config.report.format(time=time)
+
+        # Check for completed or partial runs
+        completed_folds = 0
+        if report_path.exists():
+            with open(report_path, "r", encoding="utf-8") as fp:
+                report = json.load(fp)
+            completed_folds = len(report["results"])
+            if completed_folds == run_config.validation.n_splits:
+                if "results_avg" not in report:
+                    keys = report["results"][0].keys()
+                    report["results_avg"] = {
+                        k: sum(r[k] for r in report["results"]) / len(report["results"])
+                        for k in keys
+                    }
+                    with open(report_path, "w", encoding="utf-8") as fp:
+                        json.dump(report, fp, indent=2)
+                print(f"Skipping ds_{ds_idx:02d}, already completed.")
+                continue
+
+        conf_path = ds_root / f"conf-{time}.json"
+        with open(conf_path, "w", encoding="utf-8") as fp:
+            fp.write(run_config.to_json())
+
+        print("=" * 80)
+        print(f"DATASET {ds_idx + 1}/{len(DATASET_ARGS)}: {serialisable_ds_args}")
+        print("=" * 80)
+
+        dataset = Flickr2K(**run_config.dataset)
+        ds = subset_first_n_groups(dataset, run_config.subset_size)
+
+        gkf = GroupKFold(**run_config.validation)
+
+        for i, (train_idx, val_idx) in enumerate(gkf.split(ds.samples, groups=ds.groups)):
+            fold = i + 1
+            if fold <= completed_folds:
+                continue
+
+            log_path = ds_root / csv_fmt.format(time=time, fold=fold)
+            if log_path.exists():
+                print(f"  Log exists for fold {fold}, skipping.")
+                continue
+
+            print("=" * 80)
+            print(f"FOLD {fold}/{run_config.validation.n_splits}")
+            print("=" * 80)
+
+            path_kwargs = dict(time=time, fold=fold)
+            csv_path = ds_root / csv_fmt.format(**path_kwargs)
+            chkpoint_path = ds_root / chkpoint_fmt.format(**path_kwargs)
+
+            train_ds = Subset(ds, train_idx)
+            val_ds = Subset(ds, val_idx)
+
+            train_loader = DataLoader(train_ds, shuffle=True, **run_config.dataloader)
+            val_loader = DataLoader(val_ds, shuffle=False, **run_config.dataloader)
+
+            model = DnCNN(**run_config.model)
+
+            model.compile(
+                torch.optim.Adam(model.parameters(), **run_config.optimizer),
+                torch.nn.MSELoss(),
+                metrics=[PSNR()],
+                device=device,
             )
-        train_ds = Subset(ds, train_idx)
-        val_ds = Subset(ds, val_idx)
 
-        train_loader = DataLoader(train_ds, shuffle=True, **config.dataloader)
-        val_loader = DataLoader(val_ds, shuffle=False, **config.dataloader)
+            run_config["csv_log.path", "checkpoint.filepath"] = csv_path, chkpoint_path
 
-        model = DnCNN(**config.model)
+            hist = model.fit(
+                train_loader,
+                validation_loader=val_loader,
+                callbacks=[
+                    lighter.callbacks.CSVLogger(**run_config.csv_log),
+                    lighter.callbacks.Checkpoint(**run_config.checkpoint),
+                ],
+                **run_config.fit,
+            )
 
-        model.compile(
-            torch.optim.Adam(model.parameters(), lr=config.learning_rt),
-            torch.nn.MSELoss(),
-            metrics=[PSNR()],
-            device=device,
-        )
+            model.load(chkpoint_path)
 
-        path_kwargs = dict(
-            time=time,
-            fold=fold,
-        )
+            model.evaluate(
+                data_loader=val_loader, callbacks=[Reporter(report_path, hist.params)]
+            )
 
-        csv_path = root / config.csv_log.path.format(**path_kwargs)
-        chkpoint_path = root / config.checkpoint.filepath.format(**path_kwargs)
-        report_path = root / config.report.format(**path_kwargs)
+        with open(report_path, "r", encoding="utf-8") as fp:
+            report = json.load(fp)
 
-        config["csv_log.path", "checkpoint.filepath"] = csv_path, chkpoint_path
+        keys = report["results"][0].keys()
+        report["results_avg"] = {
+            k: sum(r[k] for r in report["results"]) / len(report["results"])
+            for k in keys
+        }
 
-        hist = model.fit(
-            train_loader,
-            validation_loader=val_loader,
-            callbacks=[
-                lighter.callbacks.CSVLogger(**config.csv_log),
-                lighter.callbacks.Checkpoint(**config.checkpoint),
-            ],
-            **config.fit
-        )
+        with open(report_path, "w", encoding="utf-8") as fp:
+            json.dump(report, fp, indent=2)
 
-        model.load(chkpoint_path)
-
-        model.evaluate(
-            data_loader=val_loader,
-            callbacks=[
-                Reporter(report_path, hist.params)
-            ]
-        )
 
 if __name__ == "__main__":
     freeze_support()
-    main()
+    app()
+    

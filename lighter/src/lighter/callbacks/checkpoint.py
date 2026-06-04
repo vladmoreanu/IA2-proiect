@@ -1,7 +1,5 @@
 from lighter.callbacks import MonitorCallback
 
-import torch
-import os
 
 class Checkpoint(MonitorCallback):
     def __init__(
@@ -15,19 +13,19 @@ class Checkpoint(MonitorCallback):
         # save_freq="epoch",
         initial_value_threshold=None,
     ):
-        '''
+        """
         Save the model
 
         `filepath` may contain placeholders such as
         `{epoch:02d}`,`{batch:02d}` and `{loss:.2f}`. A mismatch between
         logged metrics and the path's placeholders can cause formatting to
         fail.
-        '''
+        """
         super().__init__(monitor, mode, initial_value_threshold)
 
-        self.filepath       = filepath
+        self.filepath = str(filepath)
         self.save_best_only = save_best_only
-        self.last_saved     = None
+        self.last_saved = None
 
     # Not sure this is ok...
     # def on_epoch_begin(self, epoch, logs=None):
@@ -52,7 +50,7 @@ class Checkpoint(MonitorCallback):
                 return False
         else:
             return True
-        
+
     def _save_model(self, epoch, batch, logs):
         file_path = self._get_file_path(epoch, batch, logs)
         self._model.save(file_path)

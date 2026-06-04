@@ -69,9 +69,9 @@ class Flickr2K(Dataset):
 
     @property
     def _noisy_dir(self) -> Path:
-        k  = self.blur_params.kernel_size
-        s  = self.blur_params.kernel_sigma
-        n  = self.noise_sigma
+        k = self.blur_params.kernel_size
+        s = self.blur_params.kernel_sigma
+        n = self.noise_sigma
         return self.dataset_root / f"noisy_k{k}_s{s}_n{n}"
 
     @property
@@ -80,10 +80,10 @@ class Flickr2K(Dataset):
 
     @property
     def _tiled_noisy_dir(self) -> Path:
-        k  = self.blur_params.kernel_size
-        s  = self.blur_params.kernel_sigma
-        n  = self.noise_sigma
-        t  = self.tile_size
+        k = self.blur_params.kernel_size
+        s = self.blur_params.kernel_sigma
+        n = self.noise_sigma
+        t = self.tile_size
         return self.dataset_root / f"tiled_noisy_k{k}_s{s}_n{n}_{t}"
 
     def _pair_folders(self, subset: Subsets) -> Tuple[Path, Path]:
@@ -95,8 +95,8 @@ class Flickr2K(Dataset):
 
     def _subset_dir(self, subset: Subsets) -> Path:
         return {
-            "clean":       self._clean_dir,
-            "noisy":       self._noisy_dir,
+            "clean": self._clean_dir,
+            "noisy": self._noisy_dir,
             "tiled_clean": self._tiled_clean_dir,
             "tiled_noisy": self._tiled_noisy_dir,
         }[subset]
@@ -157,8 +157,8 @@ class Flickr2K(Dataset):
     def _cache_subset(self, subset: Subsets):
         raw = self.dataset_root / "raw"
 
-        clean       = self._clean_dir
-        noisy       = self._noisy_dir
+        clean = self._clean_dir
+        noisy = self._noisy_dir
         tiled_clean = self._tiled_clean_dir
         tiled_noisy = self._tiled_noisy_dir
 
@@ -211,7 +211,8 @@ class Flickr2K(Dataset):
         if self._is_done(dst):
             return
         ResizeCropPreprocessor(self.resize).run(
-            src, dst,
+            src,
+            dst,
             batch_size=1,
             device=self.device,
         )
@@ -222,7 +223,8 @@ class Flickr2K(Dataset):
         if self._is_done(dst):
             return
         BlurNoisePreprocessor(self.blur_params, self.noise_sigma).run(
-            src, dst,
+            src,
+            dst,
             batch_size=self.cache_batch_size,
             device=self.device,
         )
@@ -233,9 +235,10 @@ class Flickr2K(Dataset):
         if self._is_done(dst):
             return
         TilePreprocessor(self.tile_size).run(
-            src, dst,
+            src,
+            dst,
             batch_size=self.cache_batch_size,
             device=self.device,
         )
         self._mark_done(dst)
-        
+
