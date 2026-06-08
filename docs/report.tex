@@ -1,7 +1,7 @@
 %===================================================================================================
 % PREAMBLE
 %===================================================================================================
-\documentclass[conference, a4paper]{IEEEtran}
+\documentclass[conference]{IEEEtran}
 
 \usepackage{lipsum}
 
@@ -17,8 +17,11 @@
 \usepackage{siunitx}
 \sisetup{round-mode=places, round-precision=2}
 
+\setcounter{topnumber}{1}
+\setcounter{bottomnumber}{1}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+  T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 
 %===================================================================================================
@@ -29,21 +32,61 @@
 \title{Image Deblur and Denoise}
 
 \author{
-\IEEEauthorblockN{Cosmin-Eusebiu Patrașcu}
-\and
-\IEEEauthorblockN{Vlad-Ștefan Moreanu}
+  \IEEEauthorblockN{Cosmin-Eusebiu Patrașcu}
+  \and
+  \IEEEauthorblockN{Vlad-Ștefan Moreanu}
 }
 
 \maketitle
 
 \begin{abstract}
-    Hello world! \cite{beyond_a_gaussian}
+Image restoration remains a fundamental challenge in computer vision, with
+applications ranging from medical imaging to computational photography. This work
+investigates the effectiveness of convolutional neural network-based restoration
+on synthetically degraded images, evaluating performance across a range of
+controlled blur and noise conditions. A selection of four restoration models are
+surveyed, spanning convolutional, transformer-based, and generative
+architectures. A residual convolutional model is trained and evaluated
+on a dataset of patch-based samples subject to varying degrees of Gaussian blur
+and additive Gaussian noise, under constrained hardware conditions. Results are
+discussed in the context of the broader restoration landscape, highlighting the
+trade-offs between architectural complexity and restoration performance.
 \end{abstract}
 
 %===================================================================================================
-% INTRODUCTION
+% State-Of-The-Art
 %===================================================================================================
 \section{State-Of-The-Art}
+
+\begin{table}[b]
+  \centering
+  \caption{SOTA Results}
+  \label{tab:sota}
+  \begin{tabular}{l|c|c}
+    \hline
+    \textbf{Model} & \textbf{PSNR} & \textbf{Dataset} \\
+    \hline
+    \hline
+    DnCNN-B\cite{beyond_a_gaussian} & 26.9 dB & $\sigma$ = 50 \\
+    % \hline
+    FFDNet\cite{FFDNet} & 28 dB & $\sigma$ = 50 \\
+    % \hline
+    DeblurGAN-Comb\cite{Deblurgan} & 28.7 dB & GoPro Dataset \\
+    % \hline
+    MIMO-Unet++\cite{Rethinking} & 32.6 dB & GoPro Dataset \\
+    % \hline
+    SwinIR\cite{Swinir} & 29.8 dB & $\sigma$ = 50 \\
+    % \hline
+    Uformer\cite{Uformer} & 39.9 dB & SIDD dataset \\
+    % \hline
+    Uformer\cite{Uformer} & 33 dB & GoPro Dataset \\
+    % \hline
+    Restormer\cite{Restormer} & 32.9 dB & GoPro Dataset \\
+    % \hline
+    Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
+    \hline
+    \end{tabular}
+\end{table}
 
 The landscape of image restoration and synthesis has advanced rapidly, moving from highly optimized
 Convolutional Neural Networks (CNNs) to highly efficient Vision Transformers and diffusion models.
@@ -74,7 +117,7 @@ Generative Adversarial Networks (cGANs). This introduces a multi-component loss 
 WGAN-GP and perceptual loss, to generate sharp and realistic textures rather than the overly smooth
 results found in basic CNNs. It's efficient architercture makes it 5 times faster than other models,
 making it a good choice for downstream object detectuin tasks. On the GoPro dataset, it achieved a
-PSNR of 29.7 dB and an SSIM of 0.958. \cite{Deblurgan}
+PSNR of 29.7 dB. \cite{Deblurgan}
 
 MIMO-UNet brings the re-engineering of the coarse-to-fine strategy into a single U-Net. It uses a
 Multi-Input Single Encoder (MISE) to process multi-scale blurry images simultaneously, and a
@@ -118,55 +161,25 @@ introduce cross-attention layers into the diffusion UNet, making them incredibly
 multi-modal conditioning. \cite{High-Resolution_image}
 
 
-\begin{table}[h]
-\centering
-\caption{SOTA Results}
-\label{tab:sota}
-\begin{tabular}{|l|c|c|}
-\hline
-\textbf{Model} & \textbf{PSNR} & \textbf{Dataset} \\
-\hline
-DnCNN-B\cite{beyond_a_gaussian} & 26.9 dB & $\sigma$ = 50 \\
-\hline
-FFDNet\cite{FFDNet} & 28 dB & $\sigma$ = 50 \\
-\hline
-DeblurGAN-Comb\cite{Deblurgan} & 28.7 dB & GoPro Dataset \\
-\hline
-MIMO-Unet++\cite{Rethinking} & 32.6 dB & GoPro Dataset \\
-\hline
-SwinIR\cite{Swinir} & 29.8 dB & $\sigma$ = 50 \\
-\hline
-Uformer\cite{Uformer} & 39.9 dB & SIDD dataset \\
-\hline
-Uformer\cite{Uformer} & 33 dB & GoPro Dataset \\
-\hline
-Restormer\cite{Restormer} & 32.9 dB & GoPro Dataset \\
-\hline
-Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
-\hline
-\end{tabular}
-\end{table}
-
 %===================================================================================================
-% 
+% Dataset Description
 %===================================================================================================
-\section{Method and Dataset Description}
+\section{Dataset Description}
+\label{sec:dataset}
 
-\lipsum[1-3]
-
-\begin{table}
+\begin{table}[b]
     \centering
     \caption{Dataset statistics with blur and noise parameters.}
     \label{tab:dataset_stats}
     \csvreader[
     tabular = r|ccc|cc,
     table head = \hline
-        \bfseries \# &
-        \bfseries Ker. S. &
-        \bfseries B. $\sigma$ &
-        \bfseries N. $\sigma$ &
-        \bfseries PSNR &
-        \bfseries MSE \\\hline\hline,
+      \bfseries \# &
+      \bfseries Ker. S. &
+      \bfseries B. $\sigma$ &
+      \bfseries N. $\sigma$ &
+      \bfseries PSNR &
+      \bfseries MSE \\\hline\hline,
     late after last line = \\\hline]%
     {../results/dataset_stats.csv}
     {2=\kernelsize, 3=\blursigma, 4=\noisesigma, 5=\psnr, 6=\mse}{
@@ -179,31 +192,87 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     }
 \end{table}
 
+The Flickr2K dataset~\cite{Lim_2017_CVPR_Workshops}, comprising approximately 2,600 high-resolution
+images, was used as the primary data source. All images were resized and center-cropped to a uniform
+resolution of $1024 \times 1024$ pixels prior to preprocessing. Each image then underwent a
+three-stage degradation pipeline: Gaussian blur with a fixed kernel size of 5, additive Gaussian
+noise, and finally tiling into non-overlapping $128 \times 128$ patches, yielding a substantial
+number of training samples per image.
+The choice of patch size was motivated by the limited hardware available for training,
+as smaller patches reduce memory overhead while still providing sufficient context for
+local feature extraction. 
+To evaluate model robustness across a range of degradation conditions, seven dataset
+variants were constructed by varying the blur and noise parameters. Three variants
+isolate the effect of blur by applying Gaussian blur at $\sigma \in \{5, 10, 15\}$
+with no additive noise. A further three variants isolate noise by applying additive
+Gaussian noise at $\sigma \in \{15, 20, 25\}$ with no blur. A final mixed-degradation
+variant combines both blur ($\sigma_b = 10$) and noise ($\sigma_n = 15$), representing
+a more realistic compound degradation scenario. A summary of all dataset configurations
+is provided in Table~\ref{tab:dataset_stats}, along with the average PSNR and MSE metrics for each
+variant of the degradation conditions.
+
 %===================================================================================================
-% 
+% Experiments and Results
 %===================================================================================================
 \section{Experiments and Results}
+\label{sec:experiments}
 
-\lipsum[1-3]
-
-\begin{table}
-    \centering
-    \caption{Average result per dataset.}
-    \label{tab:results_summary}
-    \csvreader[
-    tabular = r|ccc|cc,
-    table head = \hline
-        \bfseries \# &
-        \bfseries PSNR (dB) &
-        \bfseries MSE \\\hline\hline,
-    late after last line = \\\hline]
-    {../results/DnCNN-kfold-composed/summary_2026-06-03_12-42.csv}
-    {2=\psnr, 3=\mse}{
-    \thecsvrow &
-    \num{\psnr} &
-    \num[scientific-notation=true, round-precision=2]{\mse}
-    }
+\begin{table}[tb]
+  \centering
+  \caption{Average result per dataset.}
+  \label{tab:results_summary}
+  \csvreader[
+  tabular = r|ccc|cc,
+  table head = \hline
+    \bfseries \# &
+    \bfseries PSNR (dB) &
+    \bfseries MSE \\\hline\hline,
+  late after last line = \\\hline]
+  {../results/DnCNN-kfold-composed/summary_2026-06-03_12-42.csv}
+  {2=\psnr, 3=\mse}{
+  \thecsvrow &
+  \num{\psnr} &
+  \num[scientific-notation=true, round-precision=2]{\mse}
+  }
 \end{table}
+
+The DnCNN architecture follows the design of~\cite{beyond_a_gaussian},
+consisting of 17 convolutional layers with $3 \times 3$ filters and 64 feature
+maps throughout. The first layer is a plain convolution followed by ReLU
+activation, the intermediate 15 layers each combine convolution, batch
+normalisation, and ReLU, and the final layer is a convolution that produces the
+estimated noise residual. The clean image is recovered via residual learning,
+subtracting the predicted residual directly from the input, which simplifies the
+learning target and accelerates convergence.
+
+Experiments were conducted using a grouped 5-fold cross-validation strategy, applied
+to the first 100 images of each dataset variant due to hardware constraints. Folds
+were generated using \texttt{GroupKFold} from scikit-learn at the patch level,
+resulting in an 80/20 train-validation split per fold. Each fold was trained with a
+batch size of 16 patches using the Adam optimiser with a learning rate of
+$1 \times 10^{-3}$ and a mean squared error loss function over 10 epochs, with
+training curves for all folds provided in the Appendices. Convergence was generally
+consistent across epochs, with at most one outlier epoch per fold exhibiting
+anomalous loss behaviour. Total training time amounted to approximately 10 hours
+across all 35 folds (5 folds $\times$ 7 variants), at roughly 1 hour 45 minutes
+per variant, on a system equipped with an NVIDIA GTX 980 (4\,GiB VRAM),
+an Intel Core i5-6600 CPU, and 16\,GiB of system RAM.
+
+The DnCNN model demonstrates consistent restoration performance against the
+input degraded images, with full training curves provided in the Appendices
+and a summary of results in Table~\ref{tab:results_summary}.
+For the blur-only variants, the model achieved average PSNR values of
+32.90, 32.76, and 32.66 dB for blur $\sigma$ of 5, 10, and 15 respectively,
+compared to input PSNR values of 25.94, 25.85, and 25.83 dB. Performance
+degraded progressively with increasing noise severity: variants with
+noise $\sigma$ of 15, 20, and 25 yielded output PSNR values of 29.45, 28.11, and
+26.61 dB against input PSNR values of 24.86, 22.45, and 20.60 dB respectively.
+The mixed degradation variant, combining blur $\sigma$ of 10 with noise $\sigma$
+of 15, proved the most challenging, with the model recovering to 24.73 dB from
+an input of 22.07 dB. Across all variants the model yields a consistent PSNR
+improvement of approximately 6--7 dB for blur-dominated degradations and 3--6 dB
+for noise-dominated ones, suggesting stronger generalisation to blur than to
+high-variance noise.
 
 %===================================================================================================
 % CONCLUSIONS
@@ -219,6 +288,12 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
 \setlength{\columnwidth}{\textwidth}
 \appendix
 
+The following figures present the loss and PSNR validation curves across all 5
+folds for each of the seven dataset variants described in
+Section~\ref{sec:dataset}. Each curve represents a single fold; consistent
+convergence behaviour is observable across folds, with occasional single-epoch
+anomalies as discussed in Section~\ref{sec:experiments}.
+
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
@@ -230,7 +305,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_00/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 1 - Validation curves}
+  \caption{$\sigma_b = 5$ - DnCNN Validation curves}
   \label{fig:ds0_folds}
 \end{figure}
 
@@ -245,7 +320,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_01/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 2 - Validation curves}
+  \caption{$\sigma_b = 10$ - DnCNN Validation curves}
   \label{fig:ds1_folds}
 \end{figure}
 
@@ -260,7 +335,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_02/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 3 - Validation curves}
+  \caption{$\sigma_b = 15$ - DnCNN Validation curves}
   \label{fig:ds2_folds}
 \end{figure}
 
@@ -275,7 +350,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_03/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 4 - Validation curves}
+  \caption{$\sigma_n = 15$ - DnCNN Validation curves}
   \label{fig:ds3_folds}
 \end{figure}
 
@@ -290,7 +365,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_04/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 5 - Validation curves}
+  \caption{$\sigma_n = 20$ - DnCNN Validation curves}
   \label{fig:ds4_folds}
 \end{figure}
 
@@ -305,7 +380,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_05/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 6 - Validation curves}
+  \caption{$\sigma_n = 25$ - DnCNN Validation curves}
   \label{fig:ds5_folds}
 \end{figure}
 
@@ -320,7 +395,7 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \centering
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_06/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
-  \caption{Dataset 7 - Validation curves}
+  \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - DnCNN Validation curves}
   \label{fig:ds6_folds}
 \end{figure}
 
@@ -332,17 +407,17 @@ Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
 \bibliographystyle{IEEEtran}
 \bibliography{references.bib}
                             
-                            % COLUMN FITTING FIGURE
-                            % \begin{figure}[!t]
-                            %   \centering
-                            %   \includegraphics[width=\columnwidth]{figures/your_image}
-                            %   \caption{Your caption here. IEEE captions are full sentences ending with a period.}
-                            %   \label{fig:your_label}
-                            % \end{figure}
-                            
-                            % COLUMN SPANNING FIGURE
-                            % \begin{figure*}[!t]
-                            %   \centering
+% COLUMN FITTING FIGURE
+% \begin{figure}[!t]
+%   \centering
+%   \includegraphics[width=\columnwidth]{figures/your_image}
+%   \caption{Your caption here. IEEE captions are full sentences ending with a period.}
+%   \label{fig:your_label}
+% \end{figure}
+
+% COLUMN SPANNING FIGURE
+% \begin{figure*}[!t]
+%   \centering
 %   \includegraphics[width=\textwidth]{figures/your_image}
 %   \caption{Your caption here.}
 %   \label{fig:your_label}
