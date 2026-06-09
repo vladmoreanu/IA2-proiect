@@ -27,7 +27,7 @@ RESULT_ROOT = Path("./results").resolve()
 
 CONFIG = lighter.Config(
     {
-        "name": "DnCNN-kfold-composed",
+        "name": "DnCNN-kfold",
         "report": "report-{time}.json",
         "dataset": {
             "subset": "tiled_pairs",
