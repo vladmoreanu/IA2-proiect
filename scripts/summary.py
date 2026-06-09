@@ -66,8 +66,13 @@ def main(time: str, experiment: str = "DnCNN-kfold-composed"):
 
         # --- plots ---
         folds_data = []
-        for fold in range(1, 6):
-            log_path = ds_path / f"logs/{time}-{fold}.csv"
+        is_kfold = "kfold" in experiment
+        log_paths = (
+            [ds_path / f"logs/{time}-{fold}.csv" for fold in range(1, 6)]
+            if is_kfold
+            else [ds_path / f"logs/{time}.csv"]
+        )
+        for log_path in log_paths:
             if not log_path.exists():
                 break
             psnr_vals, loss_vals = [], []
@@ -97,3 +102,4 @@ def main(time: str, experiment: str = "DnCNN-kfold-composed"):
 
 if __name__ == "__main__":
     typer.run(main)
+    
