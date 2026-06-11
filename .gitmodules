@@ -1,0 +1,3 @@
+[submodule "externals/uformer"]
+	path = externals/uformer
+	url = git@github.com:vladmoreanu/Uformer.git

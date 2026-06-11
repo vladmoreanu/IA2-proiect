@@ -1,7 +1,7 @@
 from lighter.callbacks import Callback
 
 import os
-import pandas as pd
+import csv
 
 class CSVLogger(Callback):
     def __init__(self, path):
@@ -14,13 +14,9 @@ class CSVLogger(Callback):
             os.remove(self.path)
 
     def on_epoch_end(self, epoch, logs=None):
-        log = {}
-        for k, v in logs.items():
-            log[k] = [v]
-        df = pd.DataFrame(log)
-        df.to_csv(
-            self.path,
-            mode='a',
-            header=not os.path.exists(self.path),
-            index=False,
-        )
+        write_header = not os.path.exists(self.path)
+        with open(self.path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=logs.keys())
+            if write_header:
+                writer.writeheader()
+            writer.writerow(logs)

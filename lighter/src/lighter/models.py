@@ -5,6 +5,7 @@ import torch
 
 import os
 
+from typing import List
 
 class Model(torch.nn.Module):
     history: History
@@ -37,7 +38,7 @@ class Model(torch.nn.Module):
         optimizer=None,
         loss=None,
         # loss_weights=None,
-        metrics: list[Metric] = None,
+        metrics: List[Metric] = None,
         # weighted_metrics=None,
         # run_eagerly=False,
         # steps_per_execution=1,

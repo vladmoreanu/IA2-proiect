@@ -1,9 +1,11 @@
 from .callback import Callback
 
+from typing import List
+
 class CallbackList(Callback):
     def __init__(
         self,
-        callbacks : list[Callback] = None,
+        callbacks : List[Callback] = None,
         model = None,
         **params,
     ):

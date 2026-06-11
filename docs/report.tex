@@ -274,6 +274,17 @@ improvement of approximately 6--7 dB for blur-dominated degradations and 3--6 dB
 for noise-dominated ones, suggesting stronger generalisation to blur than to
 high-variance noise.
 
+Following the cross-validation experiments across all seven dataset variants, a
+final model was trained on the complete sample set of the mixed degradation variant
+— combining blur $\sigma$ of 10 and noise $\sigma$ of 15 — representing the most
+challenging and realistic degradation condition. The data was split into an 80\%
+training set and a 20\% validation set, with the reported PSNR measured on the
+held-out validation split. The resulting model achieved a PSNR of 28.98 dB, an
+improvement over the cross-validation estimate of 24.73 dB, attributable to the
+increased volume of training data afforded by training on the full dataset.
+Per-epoch validation curves against the dataset baseline are provided in
+Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
+
 %===================================================================================================
 % CONCLUSIONS
 %===================================================================================================
@@ -397,6 +408,21 @@ anomalies as discussed in Section~\ref{sec:experiments}.
   \end{subfigure}
   \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - DnCNN Validation curves}
   \label{fig:ds6_folds}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN/ds_06/plot_loss-2026-06-09_01-31.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/DnCNN/ds_06/plot_psnr-2026-06-09_01-31.png}
+  \end{subfigure}
+  \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - DnCNN Validation curves for training on all data}
+  \label{fig:ds6_dncnn_final}
 \end{figure}
 
 %===================================================================================================

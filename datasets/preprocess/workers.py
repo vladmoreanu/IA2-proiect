@@ -2,7 +2,7 @@ from ._base import ImageDirDataset, ImagePreprocessor, ThreadPoolExecutor
 from utils import save_image, DEVICE
 from .funcs import blur, noise, resize_crop, tile
 
-from typing import NamedTuple
+from typing import NamedTuple, List
 from pathlib import Path
 
 from tqdm import tqdm
@@ -53,7 +53,7 @@ class TilePreprocessor(ImagePreprocessor):
     def save_batch(
         self,
         result: torch.Tensor,
-        batch_names: list[str],
+        batch_names: List[str],
         output_dir: Path,
         save_pool: ThreadPoolExecutor,
     ) -> set:
