@@ -77,8 +77,9 @@ class Model(torch.nn.Module):
 
                 outputs = self(inputs)
                 loss = self.loss_fn(outputs, targets)
-                self.optimizer.zero_grad()
+                self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.parameters(), 1.0)
                 self.optimizer.step()
 
             else:

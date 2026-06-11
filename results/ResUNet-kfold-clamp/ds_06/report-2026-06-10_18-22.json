@@ -1,0 +1,16 @@
+{
+  "train_params": [
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    }
+  ],
+  "results": [
+    {
+      "val_loss": 0.3268571266904473,
+      "val_psnr": 4.909879207611084
+    }
+  ]
+}

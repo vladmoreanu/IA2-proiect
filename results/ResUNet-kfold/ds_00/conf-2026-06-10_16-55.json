@@ -1,0 +1,42 @@
+{
+  "name": "ResUNet-kfold",
+  "report": "report-{time}.json",
+  "dataset": {
+    "subset": "tiled_pairs",
+    "resize": 1024,
+    "blur_params": {
+      "kernel_size": 5,
+      "kernel_sigma": 5.0
+    },
+    "noise_sigma": 0.0,
+    "tile_size": 128,
+    "cache_batch_size": 32
+  },
+  "subset_size": 100,
+  "dataloader": {
+    "batch_size": 16,
+    "num_workers": 2,
+    "prefetch_factor": 4,
+    "pin_memory": true,
+    "persistent_workers": true
+  },
+  "validation": {
+    "n_splits": 5
+  },
+  "model": {
+    "features": 64
+  },
+  "optimizer": {
+    "lr": 0.001
+  },
+  "fit": {
+    "epochs": 10
+  },
+  "csv_log": {
+    "path": "logs/{time}-{fold}.csv"
+  },
+  "checkpoint": {
+    "filepath": "checkpoints/{time}-{fold}.pth",
+    "save_best_only": true
+  }
+}

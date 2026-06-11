@@ -1,0 +1,60 @@
+{
+  "train_params": [
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    },
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    },
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    },
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    },
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    }
+  ],
+  "results": [
+    {
+      "val_loss": 0.001768140302192478,
+      "val_psnr": 29.078388214111328
+    },
+    {
+      "val_loss": 0.001784594141645357,
+      "val_psnr": 29.07746696472168
+    },
+    {
+      "val_loss": 0.002327876772505988,
+      "val_psnr": 27.870840072631836
+    },
+    {
+      "val_loss": 0.002453368587339355,
+      "val_psnr": 27.849760055541992
+    },
+    {
+      "val_loss": 0.0021820883544933166,
+      "val_psnr": 28.060251235961914
+    }
+  ],
+  "results_avg": {
+    "val_loss": 0.002103213631635299,
+    "val_psnr": 28.38734130859375
+  }
+}

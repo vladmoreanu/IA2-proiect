@@ -1,0 +1,36 @@
+{
+  "train_params": [
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    },
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    },
+    {
+      "epochs": 10,
+      "steps": 320,
+      "val_steps": 80,
+      "val_freq": 1
+    }
+  ],
+  "results": [
+    {
+      "val_loss": 66261933.15,
+      "val_psnr": -78.05368041992188
+    },
+    {
+      "val_loss": 0.00739707836182788,
+      "val_psnr": 21.474960327148438
+    },
+    {
+      "val_loss": 24768000183500.8,
+      "val_psnr": -133.54522705078125
+    }
+  ]
+}
