@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
+from typing import Tuple, List
+
 from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -25,7 +27,7 @@ class ImageDirDataset(Dataset):
     def __len__(self) -> int:
         return len(self.paths)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, str]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, str]:
         # Workers cannot share CUDA contexts — always load onto CPU here.
         # The main loop moves the batch to the target device after collation.
         return load_image(self.paths[idx]).cpu(), self.paths[idx].name
@@ -42,7 +44,7 @@ class ImagePreprocessor(ABC):
     def save_batch(
         self,
         result: torch.Tensor,
-        batch_names: list[str],
+        batch_names: List[str],
         output_dir: Path,
         save_pool: ThreadPoolExecutor,
     ) -> set:

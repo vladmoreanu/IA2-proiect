@@ -2,5 +2,5 @@
 name = "lighter"
 version = "0.1.1"
 description = "torch wrapper"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 dependencies = []

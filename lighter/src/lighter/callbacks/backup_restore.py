@@ -6,6 +6,7 @@ from typing import Optional
 
 import torch
 
+from typing import Union, List
 
 class BackupRestore(MonitorCallback):
     _BATCH_TMPL = "batch-{epoch:04d}-{batch:06d}.pth"
@@ -13,7 +14,7 @@ class BackupRestore(MonitorCallback):
 
     def __init__(
         self,
-        dirpath: str | Path,
+        dirpath: Union[str , Path],
         monitor: str = "val_loss",
         mode: str = "auto",
         min_delta: float = 0,
@@ -47,7 +48,7 @@ class BackupRestore(MonitorCallback):
         torch.save(self._state(epoch, batch), path)
         print(f"[BackupRestore] Saved {path} (epoch {epoch}, batch {batch})")
 
-    def _prune(self, files: list[Path], max_saves: Optional[int]) -> list[Path]:
+    def _prune(self, files: List[Path], max_saves: Optional[int]) -> List[Path]:
         if max_saves is None:
             return files
         while len(files) > max_saves:
@@ -69,7 +70,7 @@ class BackupRestore(MonitorCallback):
                     best_epoch, best_batch, best_path = ep, ba, f
         return best_path
 
-    def restore(self, path: Optional[str | Path] = None) -> dict:
+    def restore(self, path: Optional[Union[str, Path]] = None) -> dict:
         if path is None:
             path = self._latest_checkpoint()
         if path is None:

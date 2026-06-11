@@ -120,7 +120,7 @@ class Flickr2K(Dataset):
 
         return returnval(self.samples[index])
 
-    def _index_samples(self) -> List[Path] | List[Tuple[Path, Path]]:
+    def _index_samples(self):
         list_images = lambda d: sorted(
             p for p in d.iterdir() if p.suffix.lower() in IMAGE_EXTS
         )
