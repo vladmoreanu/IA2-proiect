@@ -55,56 +55,31 @@ class Model(torch.nn.Module):
 
     def step(
         self,
-        data_loader,
+        inputs,
+        targets,
         training: bool = False,
     ):
-        """
-        Single-iteration function, either for training or for testing.
-
-        :param dataloader: torch.utils.data.DataLoader object to iterate over
-        """
-        self.train() if training else self.eval()
         pfx = "train_" if training else "val_"
 
-        for metric in self.metrics:
-            metric.reset()
-
-        for idx, (inputs, targets) in enumerate(data_loader):
-            inputs, targets = inputs.to(self.device), targets.to(self.device)
-
-            # Forward pass
-            if training:
-                self.callbacks.on_train_batch_begin(idx)
-
+        if training:
+            outputs = self(inputs)
+            loss = self.loss_fn(outputs, targets)
+            self.optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.parameters(), 1.0)
+            self.optimizer.step()
+        else:
+            with torch.no_grad():
                 outputs = self(inputs)
                 loss = self.loss_fn(outputs, targets)
-                self.optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.parameters(), 1.0)
-                self.optimizer.step()
 
+        for metric in self.metrics:
+            if metric.name == "loss":
+                metric.update(loss.item())
             else:
-                self.callbacks.on_val_batch_begin(idx)
-                with torch.no_grad():
-                    outputs = self(inputs)
-                    loss = self.loss_fn(outputs, targets)
+                metric.update(targets, outputs)
 
-            # Metrics update state
-            for metric in self.metrics:
-                if metric.name == "loss":
-                    metric.update(loss.item())
-                else:
-                    metric.update(targets, outputs)
-
-            # Create the log (metrics) of this batch
-            batch_log = {(pfx + x.name): x.result() for x in self.metrics}
-            if training:
-                self.callbacks.on_train_batch_end(idx, batch_log)
-            else:
-                self.callbacks.on_val_batch_end(idx, batch_log)
-
-        # Create and return the log (metrics) of this epoch
-        return {(pfx + x.name): x.result() for x in self.metrics}
+        return {pfx + x.name: x.result() for x in self.metrics}
 
     def fit(
         self,
@@ -117,19 +92,21 @@ class Model(torch.nn.Module):
         # shuffle=True,
         # class_weight=None,
         # sample_weight=None,
-        # initial_epoch=1,
+        initial_epoch=1,
+        restore_batch=0,
         # steps_per_epoch=None,
         # validation_rate=None,
         # validation_batch_size=None,
         validation_freq=1,
     ):
-        """
-        Train loop.
-        """
         self.to(self.device)
 
+
         self.callbacks = CallbackList(
-            callbacks=(callbacks or []) + [History(), PBar()],
+            callbacks=(callbacks or []) + [
+                History(),
+                PBar(initial_batch=restore_batch)
+            ],
             model=self,
             epochs=epochs,
             steps=len(train_loader),
@@ -139,17 +116,45 @@ class Model(torch.nn.Module):
 
         self.callbacks.on_train_begin()
 
-        for e in range(1, epochs + 1):
+        for e in range(initial_epoch, epochs + 1):
             self.callbacks.on_epoch_begin(e)
 
-            log = self.step(train_loader, training=True)
-            if (validation_loader is not None) & (e % validation_freq == 0):
-                val_log = self.step(validation_loader)
-                log |= val_log
+            # Training loop
+            self.train()
+            for metric in self.metrics:
+                metric.reset()
 
-            self.callbacks.on_epoch_end(e, log)
+            _skip = restore_batch if e == initial_epoch else 0
 
-        self.callbacks.on_train_end(log)
+            iterator = iter(train_loader)
+            for idx in range(len(train_loader)):
+                if idx < _skip:
+                    continue
+                inputs, targets = next(iterator)
+                self.callbacks.on_train_batch_begin(idx)
+                inputs, targets = inputs.to(self.device), targets.to(self.device)
+                batch_log = self.step(inputs, targets, training=True)  
+                self.callbacks.on_train_batch_end(idx, batch_log)
+
+            epoch_log = batch_log
+
+            # Validation loop
+            if (validation_loader is not None) and (e % validation_freq == 0):
+                self.eval()
+                for metric in self.metrics:
+                    metric.reset()
+
+                for idx, (inputs, targets) in enumerate(validation_loader):
+                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+                    self.callbacks.on_val_batch_begin(idx)
+                    batch_log = self.step(inputs, targets, training=False)  
+                    self.callbacks.on_val_batch_end(idx, batch_log)
+                
+                epoch_log |= batch_log
+
+            self.callbacks.on_epoch_end(e, epoch_log)
+
+        self.callbacks.on_train_end(epoch_log)
 
         return self.history
 
@@ -173,7 +178,15 @@ class Model(torch.nn.Module):
 
         self.callbacks.on_val_begin()
 
-        log = self.step(data_loader)
+        self.eval()
+        for metric in self.metrics:
+            metric.reset()
+
+        for idx, (inputs, targets) in enumerate(validation_loader):
+            inputs, targets = inputs.to(self.device), targets.to(self.device)
+            self.callbacks.on_val_batch_begin(idx)
+            log = self.step(inputs, targets)  
+            self.callbacks.on_val_batch_end(idx, log)
 
         self.callbacks.on_val_end(log)
 

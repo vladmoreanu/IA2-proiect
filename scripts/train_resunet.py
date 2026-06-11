@@ -137,14 +137,19 @@ def main(time: Optional[str] = typer.Argument(None)):
         csv_path, chkpoint_path, backup_dirpath
     )
 
+    bkup = lighter.callbacks.BackupRestore(**run_config.backup_restore)
+    ckpt = bkup.peek()
+
     hist = model.fit(
         train_loader,
         validation_loader=val_loader,
         callbacks=[
             lighter.callbacks.CSVLogger(**run_config.csv_log),
             lighter.callbacks.Checkpoint(**run_config.checkpoint),
-            lighter.callbacks.BackupRestore(**run_config.backup_restore),
+            bkup,
         ],
+        initial_epoch=ckpt["epoch"] if ckpt else 1,
+        restore_batch=ckpt["batch"] + 1 if ckpt else 0,
         **run_config.fit,
     )
 

@@ -70,7 +70,7 @@ class BackupRestore(MonitorCallback):
                     best_epoch, best_batch, best_path = ep, ba, f
         return best_path
 
-    def restore(self, path: Optional[Union[str, Path]] = None) -> dict:
+    def _validate_path(self, path: Optional[Union[str, Path]] = None) -> Path:
         if path is None:
             path = self._latest_checkpoint()
         if path is None:
@@ -80,6 +80,17 @@ class BackupRestore(MonitorCallback):
         if not path.exists():
             raise FileNotFoundError(f"Checkpoint not found: {path}")
 
+        return path
+
+    def peek(self, path: Optional[Union[str, Path]] = None) -> dict:
+        try:
+            path = self._validate_path(path)
+        except FileNotFoundError:
+            return None
+        return torch.load(path, map_location="cpu")
+
+    def restore(self, path: Optional[Union[str, Path]] = None) -> dict:
+        path = self._validate_path(path)
         ckpt = torch.load(path, map_location=self._model.device)
         print(f"[BackupRestore] Restoring from {path} (epoch {ckpt['epoch']}, batch {ckpt['batch']})")
 

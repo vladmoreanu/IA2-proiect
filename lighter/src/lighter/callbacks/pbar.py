@@ -3,10 +3,10 @@ from lighter.callbacks import Callback
 from tqdm import tqdm
 
 class PBar(Callback):
-    def __init__(self):
+    def __init__(self, initial_batch=0):
         super().__init__()
         self.pbar = None
-
+        self._initial_batch = initial_batch
         self.pbar_conf = {
             'ncols'         : 80,
             'unit'          : 'batch',
@@ -26,8 +26,10 @@ class PBar(Callback):
         self.pbar = tqdm(
             desc=f"Epoch {epoch}/{self.params['epochs']}",
             total=pbar_len,
+            initial=self._initial_batch,
             **self.pbar_conf,
-            )
+        )
+        self._initial_batch = 0
 
     def on_epoch_end(self, epoch, logs=None):
         self.pbar.close()
