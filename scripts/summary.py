@@ -22,7 +22,7 @@ def load_dataset_stats(result_root: Path) -> dict:
 def plot_folds(ds_idx: int, folds_data: list[dict], stats: dict, ds_root: Path, time: str):
     for metric, ylabel, stat_key, stat_fmt, filename in [
         ("psnr", "PSNR (dB)", "psnr", lambda v: f"Baseline {v:.1f} dB", f"plot_psnr-{time}.png"),
-        ("loss", "Loss",      "mse",  lambda v: f"Baseline {v:.1e}",     f"plot_loss-{time}.png"),
+        ("mse",  "MSE",       "mse",  lambda v: f"Baseline {v:.1e}",     f"plot_mse-{time}.png"),
     ]:
         fig, ax = plt.subplots(figsize=(6, 4))
         for fold, data in enumerate(folds_data, 1):
@@ -58,7 +58,7 @@ def main(time: str, experiment: str = "DnCNN-kfold-composed"):
                 report = json.load(fp)
             if "results_avg" in report:
                 avg = report["results_avg"]
-                summary_rows.append((ds_idx, avg["val_psnr"], avg["val_loss"]))
+                summary_rows.append((ds_idx, avg["val_psnr"], avg.get("val_mse") or avg["val_loss"]))
             else:
                 print(f"No results_avg in {report_path}, skipping from summary.")
         else:
@@ -79,8 +79,8 @@ def main(time: str, experiment: str = "DnCNN-kfold-composed"):
             with open(log_path, "r", encoding="utf-8") as fp:
                 for row in csv.DictReader(fp):
                     psnr_vals.append(float(row["val_psnr"]))
-                    loss_vals.append(float(row["val_loss"]))
-            folds_data.append({"psnr": psnr_vals, "loss": loss_vals})
+                    loss_vals.append(float(row.get("val_mse") or row["val_loss"]))
+            folds_data.append({"psnr": psnr_vals, "mse": loss_vals})
 
         if folds_data:
             plot_folds(ds_idx, folds_data, stats, ds_path, time)
