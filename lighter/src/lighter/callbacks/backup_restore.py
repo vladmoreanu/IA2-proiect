@@ -1,4 +1,4 @@
-from .monitorcallback import MonitorCallback
+from .checkpoint import Checkpoint
 
 import re
 from pathlib import Path
@@ -8,69 +8,80 @@ import torch
 
 from typing import Union, List
 
-class BackupRestore(MonitorCallback):
+class BackupRestore(Checkpoint):
     _BATCH_TMPL = "batch-{epoch:04d}-{batch:06d}.pth"
     _BATCH_RE   = re.compile(r"^batch-(\d+)-(\d+)\.pth$")
 
     def __init__(
         self,
-        dirpath: Union[str , Path],
-        monitor: str = "val_loss",
-        mode: str = "auto",
-        min_delta: float = 0,
-        baseline=None,
-        save_every_n_batches: int = 0,
-        max_batch_saves: Optional[int] = 3,
-        restore_on_train_begin: bool = True,
-    ) -> None:
-        super().__init__(monitor=monitor, mode=mode, baseline=baseline, min_delta=min_delta)
-        self.dirpath                = Path(dirpath)
-        self.save_every_n_batches   = save_every_n_batches
-        self.max_batch_saves        = max_batch_saves
-        self.restore_on_train_begin = restore_on_train_begin
+        dirpath,
+        monitor = "val_loss",
+        mode = "auto",
+        initial_value_threshold = None,
+        save_freq = "epoch",
+        max_batch_saves = 2,
+        restore_on_train_begin = True,
+    ):
+        self.dirpath = Path(dirpath)
+        filepath = self.dirpath / self._BATCH_TMPL
+        super().__init__(
+            filepath=filepath,
+            monitor=monitor,
+            save_best_only=False,
+            mode=mode,
+            save_freq=save_freq,
+            initial_value_threshold=initial_value_threshold,
+            restore_on_train_begin=restore_on_train_begin,
+        )
+        self.save_freq       = save_freq
+        self.max_batch_saves = max_batch_saves
 
-        self._epoch: int              = 0
-        self._batch: int              = 0
-        self._batch_files: list[Path] = []
+        self._file_list = []
 
-    def _state(self, epoch: int, batch: int) -> dict:
-        return {
-            "epoch":       epoch,
-            "batch":       batch,
-            "best_metric": self.best,
-            "params":      self.params or {},
-            "model":       self._model.state_dict(),
-            "optimizer":   self._model.optimizer.state_dict(),
-        }
+    def on_train_begin(self, logs=None):
+        if self.restore_on_train_begin:
+            latest = self._latest_checkpoint()
+            if latest is not None:
+                self.restore(latest)
 
-    def _save(self, path: Path, epoch: int, batch: int) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save(self._state(epoch, batch), path)
-        print(f"[BackupRestore] Saved {path} (epoch {epoch}, batch {batch})")
+    def on_train_batch_end(self, batch, logs=None):
+        logs = logs or {}
+        self._batch = batch
+        if self.save_freq == "epoch":
+            return
+        if (batch + 1) % self.save_freq != 0:
+            return
+        if self._should_save(logs):
+            self._save(self._epoch, batch, logs)
+            path = self._get_file_path(self._epoch, batch, logs)
+            self._file_list.append(path)
+            self._prune_files()
 
-    def _prune(self, files: List[Path], max_saves: Optional[int]) -> List[Path]:
-        if max_saves is None:
-            return files
-        while len(files) > max_saves:
-            oldest = files.pop(0)
+    def _prune_files(self):
+        while len(self._file_list) > self.max_batch_saves:
+            oldest = self._file_list.pop(0)
             if oldest.exists():
                 oldest.unlink()
-                print(f"[BackupRestore] Removed old checkpoint: {oldest}")
-        return files
 
-    def _latest_checkpoint(self) -> Optional[Path]:
+    def _latest_checkpoint(self):
         if not self.dirpath.exists():
             return None
         best_epoch, best_batch, best_path = -1, -1, None
+        candidates = []
         for f in self.dirpath.iterdir():
             m = self._BATCH_RE.match(f.name)
             if m:
                 ep, ba = int(m.group(1)), int(m.group(2))
+                candidates.append((ep, ba, f))
                 if (ep, ba) > (best_epoch, best_batch):
                     best_epoch, best_batch, best_path = ep, ba, f
+
+        candidates.sort()
+        self._file_list = [f for _, _, f in candidates]
+        self._prune_files()  # immediately evict anything beyond max_batch_saves
         return best_path
 
-    def _validate_path(self, path: Optional[Union[str, Path]] = None) -> Path:
+    def _validate_path(self, path=None):
         if path is None:
             path = self._latest_checkpoint()
         if path is None:
@@ -82,47 +93,13 @@ class BackupRestore(MonitorCallback):
 
         return path
 
-    def peek(self, path: Optional[Union[str, Path]] = None) -> dict:
+    def peek(self, path=None):
         try:
             path = self._validate_path(path)
         except FileNotFoundError:
             return None
         return torch.load(path, map_location="cpu")
 
-    def restore(self, path: Optional[Union[str, Path]] = None) -> dict:
+    def restore(self, path=None, monitor_only=False):
         path = self._validate_path(path)
-        ckpt = torch.load(path, map_location=self._model.device)
-        print(f"[BackupRestore] Restoring from {path} (epoch {ckpt['epoch']}, batch {ckpt['batch']})")
-
-        self._model.load_state_dict(ckpt["model"])
-        self._model.optimizer.load_state_dict(ckpt["optimizer"])
-        self._epoch = ckpt["epoch"]
-        self.best   = ckpt.get("best_metric", self.best)
-        return ckpt
-
-    def on_train_begin(self, logs=None) -> None:
-        self.dirpath.mkdir(parents=True, exist_ok=True)
-        if self.restore_on_train_begin:
-            latest = self._latest_checkpoint()
-            if latest is not None:
-                self.restore(latest)
-            else:
-                print(f"[BackupRestore] No existing checkpoint in {self.dirpath}, starting fresh.")
-
-    def on_epoch_begin(self, epoch: int, logs=None) -> None:
-        self._epoch = epoch
-        self._batch = 0
-
-    def on_train_batch_end(self, batch: int, logs=None) -> None:
-        self._batch = batch
-        if self.save_every_n_batches < 1:
-            return
-        if (batch + 1) % self.save_every_n_batches != 0:
-            return
-        path = self.dirpath / self._BATCH_TMPL.format(epoch=self._epoch, batch=batch)
-        self._save(path, epoch=self._epoch, batch=batch)
-        self._batch_files.append(path)
-        self._batch_files = self._prune(self._batch_files, self.max_batch_saves)
-
-    def on_train_end(self, logs=None) -> None:
-        print(f"[BackupRestore] Training complete. Best {self.monitor}: {self.best:.6f}. Checkpoints in: {self.dirpath}")
+        return super().restore(path, monitor_only=monitor_only)

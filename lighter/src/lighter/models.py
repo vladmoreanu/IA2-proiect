@@ -13,7 +13,7 @@ class Model(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
-    def save(
+    def save_weights(
         self,
         filepath,
     ):
@@ -22,7 +22,7 @@ class Model(torch.nn.Module):
             os.makedirs(output_dir)
         torch.save(self.state_dict(), filepath)
 
-    def load(
+    def load_weights(
         self,
         filepath,
     ):
@@ -103,10 +103,10 @@ class Model(torch.nn.Module):
 
 
         self.callbacks = CallbackList(
-            callbacks=(callbacks or []) + [
+            callbacks=[
+                PBar(initial_batch=restore_batch),
                 History(),
-                PBar(initial_batch=restore_batch)
-            ],
+            ] + (callbacks or []),
             model=self,
             epochs=epochs,
             steps=len(train_loader),
@@ -182,7 +182,7 @@ class Model(torch.nn.Module):
         for metric in self.metrics:
             metric.reset()
 
-        for idx, (inputs, targets) in enumerate(validation_loader):
+        for idx, (inputs, targets) in enumerate(data_loader):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
             self.callbacks.on_val_batch_begin(idx)
             log = self.step(inputs, targets)  

@@ -63,8 +63,8 @@ CONFIG = lighter.Config(
         },
         "backup_restore": {
             "dirpath": "backup/{time}",
-            "save_every_n_batches": 200,
-            "max_batch_saves": 3,
+            "save_freq": 200,
+            "max_batch_saves": 2,
         },
     }
 )
@@ -133,8 +133,14 @@ def main(time: Optional[str] = typer.Argument(None)):
         device=device,
     )
 
-    run_config["csv_log.path", "checkpoint.filepath", "backup_restore.dirpath"] = (
-        csv_path, chkpoint_path, backup_dirpath
+    run_config[
+        "csv_log.path",
+        "checkpoint.filepath",
+        "backup_restore.dirpath"
+    ] = (
+        csv_path,
+        chkpoint_path,
+        backup_dirpath
     )
 
     bkup = lighter.callbacks.BackupRestore(**run_config.backup_restore)
@@ -145,7 +151,10 @@ def main(time: Optional[str] = typer.Argument(None)):
         validation_loader=val_loader,
         callbacks=[
             lighter.callbacks.CSVLogger(**run_config.csv_log),
-            lighter.callbacks.Checkpoint(**run_config.checkpoint),
+            lighter.callbacks.Checkpoint(
+                **run_config.checkpoint,
+                restore_on_train_begin=True if ckpt else False
+            ),
             bkup,
         ],
         initial_epoch=ckpt["epoch"] if ckpt else 1,
@@ -153,7 +162,7 @@ def main(time: Optional[str] = typer.Argument(None)):
         **run_config.fit,
     )
 
-    model.load(chkpoint_path)
+    model.load_weights(chkpoint_path)
 
     model.evaluate(
         data_loader=val_loader, callbacks=[Reporter(report_path, hist.params)]

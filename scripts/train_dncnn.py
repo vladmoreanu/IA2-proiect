@@ -146,7 +146,7 @@ def main(time: Optional[str] = typer.Argument(None)):
         **run_config.fit,
     )
 
-    model.load(chkpoint_path)
+    model.load_weights(chkpoint_path)
 
     model.evaluate(
         data_loader=val_loader, callbacks=[Reporter(report_path, hist.params)]
