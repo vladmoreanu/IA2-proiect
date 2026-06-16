@@ -1,6 +1,6 @@
 from utils import save_image, DEVICE
 from utils.env import resolve_datasets_dir
-from modeling import DnCNN
+from modeling import DnCNN, ResUNet
 from modeling.metrics import mse, psnr
 from datasets import Flickr2K
 # from datasets.preprocess.funcs import tile, untile
@@ -11,13 +11,12 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 
-
-CHECKPOINT = Path("results/DnCNN_0/model_2026-05-28_f0.pth")
+CHECKPOINT = Path("results/DnCNN/ds_06/checkpoints/2026-06-09_01-31.pth")
 # OUTPUT_DIR = resolve_datasets_dir() / "Flickr2K/exemple/processed"
 TILE_SIZE = 128
 STRIDE = 64
 BATCH_SIZE = 4
-INDEX = 1000
+INDEX = 2
 
 
 def tile(images: torch.Tensor, tile_size: int, stride: int) -> torch.Tensor:
@@ -98,10 +97,8 @@ def main():
 
     model = DnCNN()
     model.device = DEVICE
-    model.load_state_dict(
-        torch.load(CHECKPOINT, map_location=DEVICE, weights_only=True)
-    )
-    # model.load(CHECKPOINT)
+    checkpoint = torch.load(CHECKPOINT, map_location=DEVICE, weights_only=True)
+    model.load_state_dict(checkpoint)
 
     predicted_flat = model.predict(loader)  # (T, C, tile_size, tile_size)
     predicted_tiles = predicted_flat.view(
@@ -125,6 +122,7 @@ def main():
     clean = to_24bit(clean)
     noisy = to_24bit(noisy)
 
+    # --- Figura 1: Imaginile complete ---
     fig, axes = plt.subplots(1, 3, figsize=(16, 9))
     axes[0].imshow(to_hwc(clean))
     axes[0].set_title("Original")
@@ -137,8 +135,35 @@ def main():
     axes[2].axis("off")
 
     plt.tight_layout()
+    plt.savefig("duck_DnCNN_Full.png", dpi=300, bbox_inches="tight")
+
+    _, _, h, w = noisy.shape
+
+    n_x = len(range(0, w - TILE_SIZE + 1, STRIDE))
+    n_y = len(range(0, h - TILE_SIZE + 1, STRIDE))
+
+    center_x_idx = n_x // 2
+    center_y_idx = n_y // 2
+
+    center_idx = center_y_idx * n_x + center_x_idx
+
+    # Forma rezultatului: (1, C, TILE_SIZE, TILE_SIZE)
+    noisy_center_tile = to_24bit(tiles[:, center_idx])
+    predicted_center_tile = to_24bit(predicted_tiles[:, center_idx])
+
+    fig2, axes2 = plt.subplots(1, 2, figsize=(10, 5))
+    axes2[0].imshow(to_hwc(noisy_center_tile))
+    axes2[0].set_title(f"Center Tile (Index {center_idx}): Noisy")
+    axes2[0].axis("off")
+    axes2[1].imshow(to_hwc(predicted_center_tile))
+    axes2[1].set_title(f"Center Tile (Index {center_idx}): Predicted")
+    axes2[1].axis("off")
+
+    plt.tight_layout()
+    plt.savefig("duck_DnCNN_Full_CenterTile.png", dpi=300, bbox_inches="tight")
+
     plt.show()
-    
+
 
 if __name__ == "__main__":
     main()
