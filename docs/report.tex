@@ -87,7 +87,7 @@ trade-offs between architectural complexity and restoration performance.
     % \hline
     Restormer\cite{Restormer} & 40 dB & SIDD dataset \\
     \hline
-    \end{tabular}
+  \end{tabular}
 \end{table}
 
 The landscape of image restoration and synthesis has advanced rapidly, moving from highly optimized
@@ -170,28 +170,28 @@ multi-modal conditioning. \cite{High-Resolution_image}
 \label{sec:dataset}
 
 \begin{table}[b]
-    \centering
-    \caption{Dataset statistics with blur and noise parameters.}
-    \label{tab:dataset_stats}
-    \csvreader[
-    tabular = r|ccc|cc,
-    table head = \hline
-      \bfseries \# &
-      \bfseries Ker. S. &
-      \bfseries B. $\sigma$ &
-      \bfseries N. $\sigma$ &
-      \bfseries PSNR &
-      \bfseries MSE \\\hline\hline,
-    late after last line = \\\hline]%
-    {../results/dataset_stats.csv}
-    {2=\kernelsize, 3=\blursigma, 4=\noisesigma, 5=\psnr, 6=\mse}{
-    \thecsvrow &
-    \kernelsize &
-    \blursigma &
-    \noisesigma &
-    \num{\psnr} &
-    \num[scientific-notation=true, round-precision=2]{\mse}
-    }
+  \centering
+  \caption{Dataset statistics with blur and noise parameters.}
+  \label{tab:dataset_stats}
+  \csvreader[
+  tabular = r|ccc|cc,
+  table head = \hline
+    \bfseries \# &
+    \bfseries Ker. S. &
+    \bfseries B. $\sigma$ &
+    \bfseries N. $\sigma$ &
+    \bfseries PSNR &
+    \bfseries MSE \\\hline\hline,
+  late after last line = \\\hline]%
+  {../results/dataset_stats.csv}
+  {2=\kernelsize, 3=\blursigma, 4=\noisesigma, 5=\psnr, 6=\mse}{
+  \thecsvrow &
+  \kernelsize &
+  \blursigma &
+  \noisesigma &
+  \num{\psnr} &
+  \num[scientific-notation=true, round-precision=2]{\mse}
+  }
 \end{table}
 
 The Flickr2K dataset~\cite{Lim_2017_CVPR_Workshops}, comprising approximately 2,600 high-resolution
@@ -520,20 +520,20 @@ anomalies as discussed in Section~\ref{sec:experiments}.
   \label{fig:ds6_resunet_ssim}
 \end{figure}
 
-% \begin{figure}[!ht]
-%   \centering
-%   \begin{subfigure}[t]{0.48\textwidth}
-%     \centering
-%     \includegraphics[width=\linewidth]{../results/ResUNet/ds_06/plot_mse-2026-06-15_21-01.png}
-%   \end{subfigure}
-%   \hfill
-%   \begin{subfigure}[t]{0.48\textwidth}
-%     \centering
-%     \includegraphics[width=\linewidth]{../results/ResUNet/ds_06/plot_psnr-2026-06-15_21-01.png}
-%   \end{subfigure}
-%   \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - ResUNet Validation curves for training on whole dataset (L1+SSIM loss)}
-%   \label{fig:ds6_resunet_final}
-% \end{figure}
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet/ds_06/plot_mse-2026-06-15_21-01.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet/ds_06/plot_psnr-2026-06-15_21-01.png}
+  \end{subfigure}
+  \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - ResUNet Validation curves for training on whole dataset (L1+SSIM loss)}
+  \label{fig:ds6_resunet_final}
+\end{figure}
 
 %===================================================================================================
 % BILBIOGRAPHY
@@ -542,7 +542,7 @@ anomalies as discussed in Section~\ref{sec:experiments}.
 \twocolumn
 \bibliographystyle{IEEEtran}
 \bibliography{references.bib}
-                            
+
 % COLUMN FITTING FIGURE
 % \begin{figure}[!t]
 %   \centering

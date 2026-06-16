@@ -1,3 +1,6 @@
 [submodule "externals/uformer"]
 	path = externals/uformer
 	url = git@github.com:vladmoreanu/Uformer.git
+[submodule "externals/restormer"]
+	path = externals/restormer
+	url = git@github.com:vladmoreanu/Restormer.git
