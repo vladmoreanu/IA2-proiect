@@ -7,6 +7,7 @@ import os
 
 from typing import List
 
+
 class Model(torch.nn.Module):
     history: History
 
@@ -26,9 +27,8 @@ class Model(torch.nn.Module):
         self,
         filepath,
     ):
-        self.load_state_dict(
-            torch.load(filepath, map_location=self.device, weights_only=True)
-        )
+        ckpt = torch.load(filepath, map_location=self.device)
+        self.load_state_dict(ckpt["model"])
 
     def forward(self, x):
         return x
@@ -101,12 +101,12 @@ class Model(torch.nn.Module):
     ):
         self.to(self.device)
 
-
         self.callbacks = CallbackList(
             callbacks=[
                 PBar(initial_batch=restore_batch),
                 History(),
-            ] + (callbacks or []),
+            ]
+            + (callbacks or []),
             model=self,
             epochs=epochs,
             steps=len(train_loader),
@@ -133,7 +133,7 @@ class Model(torch.nn.Module):
                 inputs, targets = next(iterator)
                 self.callbacks.on_train_batch_begin(idx)
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                batch_log = self.step(inputs, targets, training=True)  
+                batch_log = self.step(inputs, targets, training=True)
                 self.callbacks.on_train_batch_end(idx, batch_log)
 
             epoch_log = batch_log
@@ -147,9 +147,9 @@ class Model(torch.nn.Module):
                 for idx, (inputs, targets) in enumerate(validation_loader):
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     self.callbacks.on_val_batch_begin(idx)
-                    batch_log = self.step(inputs, targets, training=False)  
+                    batch_log = self.step(inputs, targets, training=False)
                     self.callbacks.on_val_batch_end(idx, batch_log)
-                
+
                 epoch_log |= batch_log
 
             self.callbacks.on_epoch_end(e, epoch_log)
@@ -185,7 +185,7 @@ class Model(torch.nn.Module):
         for idx, (inputs, targets) in enumerate(data_loader):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
             self.callbacks.on_val_batch_begin(idx)
-            log = self.step(inputs, targets)  
+            log = self.step(inputs, targets)
             self.callbacks.on_val_batch_end(idx, log)
 
         self.callbacks.on_val_end(log)
@@ -230,4 +230,3 @@ class Model(torch.nn.Module):
         self.callbacks.on_predict_end()
 
         return torch.cat(all_outputs)
-
