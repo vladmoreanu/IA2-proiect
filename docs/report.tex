@@ -225,6 +225,39 @@ is provided in Table~\ref{tab:dataset_stats}, along with the average PSNR and MS
 variant of the degradation conditions.
 
 
+\subsection{Analytical Method}
+
+The Richardson-Lucy algorithm\cite{richardson1972bayesian} is an iterative, maximum-likelihood procedure
+designed to reconstruct a latent image $x$ that has been degraded by a known point
+spread function (PSF) $K$. Operating under a Poisson noise distribution hypothesis,
+the iterative update at step $t+1$ is formulated as:
+
+$$
+\hat{x}^{(t+1)} = \hat{x}^{(t)} \cdot \left( K^T * \frac{y}{K * \hat{x}^{(t)}} \right)
+$$
+
+where $y$ is the degraded observed image, and $K^T$ is the adjoint (or transpose) of the blur kernel.
+Although highly effective at recovering high-frequency spatial structures during the initial iterations,
+the RL algorithm is mathematically ill-convergent.
+As the iteration count increases, the process severely amplifies high-frequency noise.
+
+To mitigate this noise amplification without over-smoothing the restored boundaries,
+a Bilateral Filter\cite{} is integrated into the restoration pipeline as a spatial-domain regularizer.
+Unlike standard linear Gaussian filters that smooth indiscriminately across edges,
+the bilateral filter operates non-linearly by combining a spatial closeness domain with a radiometric range similarity domain:
+
+$$
+BF(I)_p = \frac{1}{W_p} \sum_{q \in S} G_{\sigma_s}(\|p-q\|) G_{\sigma_r}(\|I_p - I_q\|) I_q
+$$
+
+where $p$ and $q$ represent pixel coordinates, $G_{\sigma_s}$ is the spatial Gaussian component,
+and $G_{\sigma_r}$ is the intensity range Gaussian component that strictly penalizes smoothing across strong intensity gradients (edges).
+
+By sequentially combining bilateral smoothing to suppress high-frequency noise
+with iterative RL deconvolution to recover high-frequency structural details,
+this joint analytical pipeline serves as a robust, parameter-tuned classical benchmark
+against modern deep learning architectures.
+
 \subsection{DnCNN}
 
 \begin{figure}
@@ -266,7 +299,7 @@ an Intel Core i5-6600 CPU, and 16\,GiB of system RAM.
   \label{fig:resunet_arch}
 \end{figure*}
 
-The ResUNet architecture is a hybrid deep learning model that integrates the U-Net arhitecture
+The ResUNet architecture, inspired by models as the one presented in \cite{zhang2018road}, is a hybrid deep learning model that integrates the U-Net arhitecture
 with the optimization benefits of residual learning and residual blocks.
 Originally designed for semantic segmentation (U-Net),
 this architecture has proven highly effective for pixel-level image-to-image translation tasks,
@@ -428,6 +461,7 @@ regardless of their spatial structure. \cite{girod1993s}
 \begin{table}[tb]
   \centering
   \caption{Average evaluation results for all methods}
+  \label{tab:all_methods}
   \begin{tabular}{llcc}
     \hline
     \textbf{Method} & \textbf{Arch. Category} & \textbf{PSNR (dB)} & \textbf{MSE} \\
@@ -455,6 +489,19 @@ zero-shot setting. Together, these four models span a range of architectural
 paradigms—from convolutional networks to attention-based transformers—providing
 a comprehensive benchmark for assessing performance across different levels of
 model complexity and training supervision.
+
+\subsection{Analytical Method}
+
+For comparative baseline analysis, the classical analytical method, 
+comprising Bilateral Filtering and Richardson-Lucy deconvolution, 
+yields a competitive performance with a PSNR of $25.9\text{ dB}$.
+While these quantitative results are relatively robust,
+the classical approach operates as a non-blind restoration framework.
+Achieving this level of fidelity requires complete, exact prior knowledge of the degradation parameters,
+specifically the point spread function (blur kernel) and the additive noise variance.
+In practical scenarios where these physical parameters are uncalibrated or unknown,
+the performance of this analytical baseline degrades rapidly,
+emphasizing the robustness and operational flexibility of the proposed deep learning models.
 
 \subsection{DnCNN}
 
@@ -510,7 +557,7 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
   \centering
   \includegraphics[width=\columnwidth]{slides/duck_ResUNet_Full_CenterTile.png}
   \caption{Tile restored by a fully trained ResUNet model}
-  \label{fig:example}
+  \label{fig:duck_tile}
 \end{figure}
 
 \begin{table}[tb]
@@ -532,7 +579,27 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
   }
 \end{table}
 
-% WRITE HERE
+We evaluated the ResUNet model using a 5-fold cross-validation scheme on a subset of 100 images
+to test three different loss configurations.
+
+As shown in Table \ref{tab:resunet_results_summary}, the quantitative results are numerically close.
+However, the visual effects on the restored images are qualitatively distinct,
+as discussed in the previous section.
+
+Consequently, selecting the optimal optimization objective depends directly on the specific requirements of the application.
+For metric-focused applications, opting for MSE is appropriate when the primary goal is minimizing the global mean error,
+but for perception-focused applications, hybrid formulations based on MAE and SSIM are superior when the priority is preserving fine textures, local contrast, and sharp geometric boundaries.
+
+Following the initial validation phase, we executed a complete training run on the entire mixed dataset.
+For this training, the ResUNet model was optimized using the hybrid loss function $L_{MAE} + L_{SSIM}$,
+which previously demonstrated the most balanced restoration characteristics.
+
+Upon completion, the fully trained ResUNet model achieved a PSNR of $29.22\text{ dB}$ and a MSE of $0.0019$.
+As compiled in Table \ref{tab:all_methods}, these metrics represent a small performance improvement over the DnCNN baseline.
+
+In addition to the superior quantitative metrics, the model trained with the hybrid loss function produced visually superior reconstructions.
+The restored images exhibit well-preserved structural details, sharper edge definition, and minimal artifact propagation.
+A representative prediction example on an individual image tile is illustrated in Figure \ref{fig:duck_tile}, highlighting the localized restoration performance of the proposed model.
 
 \subsection{Uformer}
 
