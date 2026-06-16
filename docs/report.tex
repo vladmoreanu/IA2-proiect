@@ -242,7 +242,7 @@ the RL algorithm is mathematically ill-convergent.
 As the iteration count increases, the process severely amplifies high-frequency noise.
 
 To mitigate this noise amplification without over-smoothing the restored boundaries,
-a Bilateral Filter\cite{} is integrated into the restoration pipeline as a spatial-domain regularizer.
+a Bilateral Filter\cite{tomasi1998bilateral} is integrated into the restoration pipeline as a spatial-domain regularizer.
 Unlike standard linear Gaussian filters that smooth indiscriminately across edges,
 the bilateral filter operates non-linearly by combining a spatial closeness domain with a radiometric range similarity domain:
 
