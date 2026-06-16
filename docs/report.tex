@@ -164,10 +164,21 @@ multi-modal conditioning. \cite{High-Resolution_image}
 
 
 %===================================================================================================
-% Dataset Description
+% Methods & Dataset 
 %===================================================================================================
-\section{Dataset Description}
+\section{Methods and Dataset}
 \label{sec:dataset}
+
+This section details the experimental methodology employed to evaluate
+denoising performance across varying degradation conditions. We first describe
+the construction of the Flickr2K-derived dataset variants, outlining the
+preprocessing pipeline and the rationale behind the chosen degradation
+parameters. We then present the architectures evaluated in this study—DnCNN,
+ResUNet, Uformer, and Reformer—along with their respective training
+configurations, providing the necessary context for interpreting the
+comparative results discussed in later sections.
+
+\subsection{Flickr2K}
 
 \begin{table}[b]
   \centering
@@ -213,48 +224,8 @@ a more realistic compound degradation scenario. A summary of all dataset configu
 is provided in Table~\ref{tab:dataset_stats}, along with the average PSNR and MSE metrics for each
 variant of the degradation conditions.
 
-%===================================================================================================
-% Experiments and Results
-%===================================================================================================
-\section{Experiments and Results}
-\label{sec:experiments}
 
-% TODO: CITE CORRECTLY DOWN HERE
-
-To evaluate the effectiveness of deep learning approaches for this task, we
-conduct a series of experiments involving four models: DnCNN~\cite{beyond_a_gaussian},
-ResUNet~\cite{resunet}, Uformer~\cite{Uformer}, and Restormer~\cite{Restormer}.
-DnCNN and ResUNet are trained and evaluated through multiple experimental
-configurations on the Flickr2K dataset, allowing for a
-systematic comparison of training strategies and architectural choices. In
-contrast, Uformer and Restormer, being large-scale transformer-based
-architectures with substantial pre-trained weights, are evaluated solely on the
-Flickr2K validation subset to assess their generalisation capability in a
-zero-shot setting. Together, these four models span a range of architectural
-paradigms—from convolutional networks to attention-based transformers—providing
-a comprehensive benchmark for assessing performance across different levels of
-model complexity and training supervision.
-
-\subsection{DnCNN architecture}
-
-\begin{table}[tb]
-  \centering
-  \caption{Average result per dataset, DNCNN model.}
-  \label{tab:dncnn_results_summary}
-  \csvreader[
-  tabular = r|ccc|cc,
-  table head = \hline
-    \bfseries \# &
-    \bfseries PSNR (dB) &
-    \bfseries MSE \\\hline\hline,
-  late after last line = \\\hline]
-  {../results/DnCNN-kfold-composed/summary_2026-06-03_12-42.csv}
-  {2=\psnr, 3=\mse}{
-  \thecsvrow &
-  \num{\psnr} &
-  \num[scientific-notation=true, round-precision=2]{\mse}
-  }
-\end{table}
+\subsection{DnCNN}
 
 The DnCNN architecture follows the design of~\cite{beyond_a_gaussian},
 consisting of 17 convolutional layers with $3 \times 3$ filters and 64 feature
@@ -277,6 +248,91 @@ anomalous loss behaviour. Total training time amounted to approximately 10 hours
 across all 35 folds (5 folds $\times$ 7 variants), at roughly 1 hour 45 minutes
 per variant, on a system equipped with an NVIDIA GTX 980 (4\,GiB VRAM),
 an Intel Core i5-6600 CPU, and 16\,GiB of system RAM.
+
+\subsection{ResUNet}
+
+\subsection{Uformer}
+
+Uformer follows the architecture described in its original formulation,
+employing a U-shaped hierarchical encoder-decoder built from Locally-enhanced
+Window (LeWin) Transformer blocks. The model operates on 128-by-128 input
+patches with an initial embedding dimension of 32, using a window size of 8 for
+the windowed self-attention mechanism. Token projection is performed via a
+linear layer, and the token-wise MLP uses the locally-enhanced feed-forward
+(LeFF) variant to better capture local context within the transformer blocks.
+The encoder-decoder follows a depth configuration of [1, 2, 8, 8, 2, 8, 8, 2,
+1] across its stages, and a modulator is incorporated to enhance the network's
+capacity to handle spatially-varying degradations. The input channel dimension
+is set to 3, corresponding to RGB images.
+
+Weights pre-trained on the GoPro dataset, a benchmark commonly used for
+motion deblurring tasks, were used to initialise the model. Evaluation was
+performed on the 20\% validation split of the 7th variant of the Flickr2K
+dataset, consistent with the held-out portion used for the other models.
+
+
+\subsection{Reformer}
+
+Restormer follows the architecture described in its original formulation,
+employing a U-shaped encoder-decoder built from transposed self-attention and
+gated-dconv feed-forward transformer blocks. The model takes 3-channel RGB
+input and output, with an initial feature dimension of 48 that doubles at each
+stage of the encoder. The encoder-decoder follows a block configuration of [4,
+6, 6, 8] across its four stages, with attention head counts of [1, 2, 4, 8]
+increasing correspondingly with depth, and a further 4 refinement blocks are
+applied at the output stage to enhance feature detail. The feed-forward
+expansion factor is set to 2.66, no bias terms are used in the convolutional
+and normalisation layers, and layer normalisation is applied with a learnable
+bias term. The dual-pixel task setting is disabled, as this configuration is
+not specific to dual-pixel defocus deblurring.
+
+Pretrained weights trained on the SIDD dataset, a benchmark widely used for
+real-world image denoising, were used to initialise the model. Evaluation was
+performed on the 20\% validation split of the 7th variant of the Flickr2K
+dataset, consistent with the held-out portion used for the other models.
+
+%===================================================================================================
+% Experiments and Results
+%===================================================================================================
+\section{Experiments and Results}
+\label{sec:experiments}
+
+% TODO: CITE CORRECTLY DOWN HERE
+
+To evaluate the effectiveness of deep learning approaches for this task, we
+conduct a series of experiments involving four models: DnCNN~\cite{beyond_a_gaussian},
+ResUNet, Uformer~\cite{Uformer}, and Restormer~\cite{Restormer}.
+DnCNN and ResUNet are trained and evaluated through multiple experimental
+configurations on the Flickr2K dataset, allowing for a
+systematic comparison of training strategies and architectural choices. In
+contrast, Uformer and Restormer, being large-scale transformer-based
+architectures with substantial pre-trained weights, are evaluated solely on the
+Flickr2K validation subset to assess their generalisation capability in a
+zero-shot setting. Together, these four models span a range of architectural
+paradigms—from convolutional networks to attention-based transformers—providing
+a comprehensive benchmark for assessing performance across different levels of
+model complexity and training supervision.
+
+\subsection{DnCNN}
+
+\begin{table}[tb]
+  \centering
+  \caption{Average result per dataset, DNCNN model.}
+  \label{tab:dncnn_results_summary}
+  \csvreader[
+  tabular = r|cc,
+  table head = \hline
+    \bfseries \# &
+    \bfseries PSNR (dB) &
+    \bfseries MSE \\\hline\hline,
+  late after last line = \\\hline]
+  {../results/DnCNN-kfold-composed/summary_2026-06-03_12-42.csv}
+  {2=\psnr, 3=\mse}{
+  \thecsvrow &
+  \num{\psnr} &
+  \num[scientific-notation=true, round-precision=2]{\mse}
+  }
+\end{table}
 
 The DnCNN model demonstrates consistent restoration performance against the
 input degraded images, with full training curves provided in the Appendices
@@ -305,13 +361,25 @@ increased volume of training data afforded by training on the full dataset.
 Per-epoch validation curves against the dataset baseline are provided in
 Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
 
-\subsection{ResUNet architecture}
+\subsection{ResUNet}
 
-% TODO: TABEL REZULTATE EXPERIMENTE RESUNET
 \begin{table}[tb]
   \centering
-  \caption{Average result per dataset, ResUNet model.}
+  \caption{Average results, ResUNet model.}
   \label{tab:resunet_results_summary}
+  \csvreader[
+  tabular = r|cc,
+  table head = \hline
+    \bfseries Loss Fn. &
+    \bfseries PSNR (dB) &
+    \bfseries MSE \\\hline\hline,
+  late after last line = \\\hline]
+  {../results/ResUNet/summary_loss.csv}
+  {1=\loss, 2=\psnr, 3=\mse}{
+  \loss &
+  \num{\psnr} &
+  \num[scientific-notation=true, round-precision=2]{\mse}
+  }
 \end{table}
 
 The ResUNet architecture is a hybrid deep learning model that integrates the U-Net arhitecture
@@ -357,19 +425,51 @@ preventing the over-smoothing common in standard autoencoder structures.
 %  PARAGRAF ULTIMA VARIANTA ANTRENATA
 %  !! NU UITA (mai sus) TABEL CU REZULTATE PT FIECARE LOSS FUNCTION
 
-\subsection{Uformer architecture}
+\subsection{Uformer}
 
-% TODO:
-%  PARAGRAF ARHITECTURA
-%  VALIDARE ultimu 20% ca mai sus
-%  DISCUTIE REZULTATE
+Uformer achieved a PSNR of 22.95 dB and an MSE of 0.0057 on this variant.
+This is notably lower than its performance would likely be on blur-only
+conditions, where PSNR values across the dataset range from approximately
+25.83 to 25.94 dB, but is comparable to the noise-only variant at
+$\sigma_n = 20$ (PSNR of 22.45 dB, MSE of 0.0057), suggesting that the
+additive noise component of the mixed degradation contributes
+substantially more to the difficulty of the task than the blur component.
+Given that Uformer was pretrained on GoPro, a dataset oriented towards
+motion deblurring rather than denoising, this pattern is consistent with
+the model being comparatively better suited to handling blur artefacts
+than noise, with performance degrading once a significant noise component
+is introduced.
 
-\subsection{Restormer architecture}
+\subsection{Restormer}
 
-% TODO:
-%  PARAGRAF ARHITECTURA
-%  VALIDARE ultimu 20% ca mai sus
-%  DISCUTIE REZULTATE
+Restormer achieved a PSNR of 26.72 dB and an MSE of 0.0033 on the
+mixed-degradation variant, outperforming Uformer by a considerable margin
+and approaching the PSNR levels observed on the blur-only variants
+($\sigma_b \in \{5, 10, 15\}$), which range from 25.83 to 25.94 dB. This
+result also exceeds performance on all three noise-only variants,
+including the comparatively mild $\sigma_n = 15$ case (PSNR of 24.86 dB),
+indicating that Restormer handles the compound degradation more
+effectively than either degradation type might suggest in isolation. This
+is consistent with Restormer having been pretrained on SIDD, a dataset
+specifically constructed for real-world denoising, suggesting that its
+denoising-oriented pretraining transfers well even when blur is
+introduced alongside noise.
+
+\begin{table}[tb]
+  \centering
+  \begin{tabular}{llcc}
+    \hline
+    \textbf{Method} & \textbf{Arch. Category} & \textbf{PSNR (dB)} & \textbf{MSE} \\
+    \hline
+    \hline
+    Bilateral + R-Lucy & Analytical      & 25.96 & - \\
+    DnCNN (MSE)        & Linear CNN      & 28.98 & 0.0019 \\
+    ResUNet (MAE+SSIM) & Multi-scale CNN & 29.22 & 0.0019 \\
+    Uformer            & Vision T-former & 22.95 & 0.0057 \\
+    Restormer          & Vision T-former & 26.72 & 0.0033 \\
+    \hline
+  \end{tabular}%
+\end{table}
 
 %===================================================================================================
 % CONCLUSIONS
