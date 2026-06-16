@@ -58,6 +58,8 @@ trade-offs between architectural complexity and restoration performance.
 %===================================================================================================
 \section{State-Of-The-Art}
 
+% TODO: RESUNET CITE, FLICKR2K CITE, SSIM CITE(?), WHATEVER ELSE
+
 \begin{table}[b]
   \centering
   \caption{SOTA Results}
@@ -217,10 +219,28 @@ variant of the degradation conditions.
 \section{Experiments and Results}
 \label{sec:experiments}
 
+% TODO: CITE CORRECTLY DOWN HERE
+
+To evaluate the effectiveness of deep learning approaches for this task, we
+conduct a series of experiments involving four models: DnCNN~\cite{dncnn},
+ResUNet~\cite{resunet}, Uformer~\cite{Uformer}, and Restormer~\cite{Restormer}.
+DnCNN and ResUNet are trained and evaluated through multiple experimental
+configurations on the Flickr2K dataset, allowing for a
+systematic comparison of training strategies and architectural choices. In
+contrast, Uformer and Restormer, being large-scale transformer-based
+architectures with substantial pre-trained weights, are evaluated solely on the
+Flickr2K validation subset to assess their generalisation capability in a
+zero-shot setting. Together, these four models span a range of architectural
+paradigms—from convolutional networks to attention-based transformers—providing
+a comprehensive benchmark for assessing performance across different levels of
+model complexity and training supervision.
+
+\subsection{DnCNN architecture}
+
 \begin{table}[tb]
   \centering
-  \caption{Average result per dataset.}
-  \label{tab:results_summary}
+  \caption{Average result per dataset, DNCNN model.}
+  \label{tab:dncnn_results_summary}
   \csvreader[
   tabular = r|ccc|cc,
   table head = \hline
@@ -260,7 +280,7 @@ an Intel Core i5-6600 CPU, and 16\,GiB of system RAM.
 
 The DnCNN model demonstrates consistent restoration performance against the
 input degraded images, with full training curves provided in the Appendices
-and a summary of results in Table~\ref{tab:results_summary}.
+and a summary of results in Table~\ref{tab:dncnn_results_summary}.
 For the blur-only variants, the model achieved average PSNR values of
 32.90, 32.76, and 32.66 dB for blur $\sigma$ of 5, 10, and 15 respectively,
 compared to input PSNR values of 25.94, 25.85, and 25.83 dB. Performance
@@ -285,12 +305,42 @@ increased volume of training data afforded by training on the full dataset.
 Per-epoch validation curves against the dataset baseline are provided in
 Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
 
+\subsection{ResUNet architecture}
+
+% TODO: TABEL REZULTATE EXPERIMENTE RESUNET
+\begin{table}[tb]
+  \centering
+  \caption{Average result per dataset, ResUNet model.}
+  \label{tab:resunet_results_summary}
+\end{table}
+
+% TODO RESUNET:
+%  PARAGRAF ARHITECTURA
+%  PARAGRAF METODOLOGIE
+%  PARAGRAF DISCUTIE REZULTATE
+%  PARAGRAF ULTIMA VARIANTA ANTRENATA
+%  !! NU UITA (mai sus) TABEL CU REZULTATE PT FIECARE LOSS FUNCTION
+
+\subsection{Uformer architecture}
+
+% TODO:
+%  PARAGRAF ARHITECTURA
+%  VALIDARE ultimu 20% ca mai sus
+%  DISCUTIE REZULTATE
+
+\subsection{Restormer architecture}
+
+% TODO:
+%  PARAGRAF ARHITECTURA
+%  VALIDARE ultimu 20% ca mai sus
+%  DISCUTIE REZULTATE
+
 %===================================================================================================
 % CONCLUSIONS
 %===================================================================================================
 \section{Conclusions}
 
-\lipsum[1]
+% TODO: CONCLUSIONS
 
 %===================================================================================================
 % APPENDIX
@@ -309,7 +359,7 @@ anomalies as discussed in Section~\ref{sec:experiments}.
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_00/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_00/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -324,7 +374,7 @@ anomalies as discussed in Section~\ref{sec:experiments}.
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_01/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_01/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -332,14 +382,14 @@ anomalies as discussed in Section~\ref{sec:experiments}.
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_01/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
   \caption{$\sigma_b = 10$ - DnCNN Validation curves}
-  \label{fig:ds1_folds}
+  \label{fig:ds1_dncnn_folds}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_02/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_02/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -347,14 +397,14 @@ anomalies as discussed in Section~\ref{sec:experiments}.
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_02/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
   \caption{$\sigma_b = 15$ - DnCNN Validation curves}
-  \label{fig:ds2_folds}
+  \label{fig:ds2_dncnn_folds}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_03/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_03/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -362,14 +412,14 @@ anomalies as discussed in Section~\ref{sec:experiments}.
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_03/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
   \caption{$\sigma_n = 15$ - DnCNN Validation curves}
-  \label{fig:ds3_folds}
+  \label{fig:ds3_dncnn_folds}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_04/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_04/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -377,14 +427,14 @@ anomalies as discussed in Section~\ref{sec:experiments}.
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_04/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
   \caption{$\sigma_n = 20$ - DnCNN Validation curves}
-  \label{fig:ds4_folds}
+  \label{fig:ds4_dncnn_folds}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_05/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_05/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -392,14 +442,14 @@ anomalies as discussed in Section~\ref{sec:experiments}.
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_05/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
   \caption{$\sigma_n = 25$ - DnCNN Validation curves}
-  \label{fig:ds5_folds}
+  \label{fig:ds5_dncnn_folds}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_06/plot_loss-2026-06-03_12-42.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_06/plot_mse-2026-06-03_12-42.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -407,14 +457,14 @@ anomalies as discussed in Section~\ref{sec:experiments}.
     \includegraphics[width=\linewidth]{../results/DnCNN-kfold-composed/ds_06/plot_psnr-2026-06-03_12-42.png}
   \end{subfigure}
   \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - DnCNN Validation curves}
-  \label{fig:ds6_folds}
+  \label{fig:ds6_dncnn_folds}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
   \begin{subfigure}[t]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{../results/DnCNN/ds_06/plot_loss-2026-06-09_01-31.png}
+    \includegraphics[width=\linewidth]{../results/DnCNN/ds_06/plot_mse-2026-06-09_01-31.png}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\textwidth}
@@ -424,6 +474,66 @@ anomalies as discussed in Section~\ref{sec:experiments}.
   \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - DnCNN Validation curves for training on all data}
   \label{fig:ds6_dncnn_final}
 \end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet-kfold-clamp+stabilitate/ds_06/plot_mse-2026-06-10_18-42.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet-kfold-clamp+stabilitate/ds_06/plot_psnr-2026-06-10_18-42.png}
+  \end{subfigure}
+  \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - ResUNet Validation curves (clamped loss)}
+  \label{fig:ds6_resunet_clamp}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet-kfold-combined_loss_L1+MSE/ds_06/plot_mse-2026-06-10_22-21.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet-kfold-combined_loss_L1+MSE/ds_06/plot_psnr-2026-06-10_22-21.png}
+  \end{subfigure}
+  \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - ResUNet Validation curves L1+MSE loss}
+  \label{fig:ds6_resunet_mse}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet-kfold-combined_loss_L1+SSIM/ds_06/plot_mse-2026-06-10_23-40.png}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../results/ResUNet-kfold-combined_loss_L1+SSIM/ds_06/plot_psnr-2026-06-10_23-40.png}
+  \end{subfigure}
+  \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - ResUNet Validation curves L1+SSIM loss}
+  \label{fig:ds6_resunet_ssim}
+\end{figure}
+
+% \begin{figure}[!ht]
+%   \centering
+%   \begin{subfigure}[t]{0.48\textwidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{../results/ResUNet/ds_06/plot_mse-2026-06-15_21-01.png}
+%   \end{subfigure}
+%   \hfill
+%   \begin{subfigure}[t]{0.48\textwidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{../results/ResUNet/ds_06/plot_psnr-2026-06-15_21-01.png}
+%   \end{subfigure}
+%   \caption{$\sigma_b = 10 $ \& $ \sigma_n = 15$ - ResUNet Validation curves for training on whole dataset (L1+SSIM loss)}
+%   \label{fig:ds6_resunet_final}
+% \end{figure}
 
 %===================================================================================================
 % BILBIOGRAPHY

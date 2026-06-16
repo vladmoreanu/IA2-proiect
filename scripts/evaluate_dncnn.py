@@ -87,7 +87,7 @@ def main():
         device=device,
     )
 
-    model.load(chkpoint_path)
+    model.load_weights(chkpoint_path)
 
     hist_params = dict(
         epochs=10,
