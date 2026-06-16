@@ -251,6 +251,44 @@ an Intel Core i5-6600 CPU, and 16\,GiB of system RAM.
 
 \subsection{ResUNet}
 
+\begin{figure*}[tb]
+  \centering
+  \includegraphics[width=\textwidth]{slides/Res_U-net.drawio.png}
+  \caption{The ResUNet architecture.}
+  \label{fig:resunet_arch}
+\end{figure*}
+
+The ResUNet architecture is a hybrid deep learning model that integrates the U-Net arhitecture
+with the optimization benefits of residual learning and residual blocks.
+Originally designed for semantic segmentation (U-Net),
+this architecture has proven highly effective for pixel-level image-to-image translation tasks,
+including joint image denoising and deblurring.
+The classic U-Net framework relies on a symmetric encoder path to capture global contextual information
+and an expanding decoder path to enable precise spatial reconstruction.
+ResUNet enhances this by replacing standard sequential convolutional layers within the encoder and decoder blocks with residual blocks.
+This modification addresses the vanishing gradient problem inherent in very deep neural networks,
+enabling stable training of deeper architectures and accelerating overall convergence.
+
+The output $H(x)$ of a residual unit is defined as:
+
+$$
+H(x) = F(x) + x
+$$
+
+where $x$ represents the input tensor to the block,
+and $F(x)$ denotes the residual mapping learned.
+Instead of forcing the network parameters to fit an entirely new underlying mapping,
+the convolutional layers are only required to learn the residual difference $F(x) = H(x) - x$.
+
+The decoder mirrors the encoder's structure,
+progressively restoring the spatial dimensions of the feature maps back to the original input resolution.
+Upsampling is performed at each decoder stage using transposed convolutions or bilinear interpolation.
+Skip connections copy the high-resolution feature maps from the encoder stages
+and concatenate them directly with the corresponding upsampled features in the decoder.
+By concatenating these raw, high-resolution features directly back to the decoding layers,
+the network bypasses the deep bottlenecks and preserves fine-grained structural integrity,
+preventing the over-smoothing common in standard autoencoder structures.
+
 \subsection{Uformer}
 
 Uformer follows the architecture described in its original formulation,
@@ -297,7 +335,22 @@ dataset, consistent with the held-out portion used for the other models.
 \section{Experiments and Results}
 \label{sec:experiments}
 
-% TODO: CITE CORRECTLY DOWN HERE
+\begin{table}[tb]
+  \centering
+  \caption{Average evaluation results for all methods}
+  \begin{tabular}{llcc}
+    \hline
+    \textbf{Method} & \textbf{Arch. Category} & \textbf{PSNR (dB)} & \textbf{MSE} \\
+    \hline
+    \hline
+    Bilateral + R-Lucy & Analytical      & 25.96 & - \\
+    DnCNN (MSE)        & Linear CNN      & 28.98 & 0.0019 \\
+    ResUNet (MAE+SSIM) & Multi-scale CNN & 29.22 & 0.0019 \\
+    Uformer            & Vision T-former & 22.95 & 0.0057 \\
+    Restormer          & Vision T-former & 26.72 & 0.0033 \\
+    \hline
+  \end{tabular}%
+\end{table}
 
 To evaluate the effectiveness of deep learning approaches for this task, we
 conduct a series of experiments involving four models: DnCNN~\cite{beyond_a_gaussian},
@@ -363,6 +416,13 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
 
 \subsection{ResUNet}
 
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=\columnwidth]{slides/duck_ResUNet_Full_CenterTile.png}
+  \caption{Tile restored by a fully trained ResUNet model}
+  \label{fig:example}
+\end{figure}
+
 \begin{table}[tb]
   \centering
   \caption{Average results, ResUNet model.}
@@ -382,48 +442,7 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
   }
 \end{table}
 
-The ResUNet architecture is a hybrid deep learning model that integrates the U-Net arhitecture
-with the optimization benefits of residual learning and residual blocks.
-Originally designed for semantic segmentation (U-Net),
-this architecture has proven highly effective for pixel-level image-to-image translation tasks,
-including joint image denoising and deblurring.
-The classic U-Net framework relies on a symmetric encoder path to capture global contextual information
-and an expanding decoder path to enable precise spatial reconstruction.
-ResUNet enhances this by replacing standard sequential convolutional layers within the encoder and decoder blocks with residual blocks.
-This modification addresses the vanishing gradient problem inherent in very deep neural networks,
-enabling stable training of deeper architectures and accelerating overall convergence.
-
-The output $H(x)$ of a residual unit is defined as:
-
-$$
-H(x) = F(x) + x
-$$
-
-where $x$ represents the input tensor to the block,
-and $F(x)$ denotes the residual mapping learned.
-Instead of forcing the network parameters to fit an entirely new underlying mapping,
-the convolutional layers are only required to learn the residual difference $F(x) = H(x) - x$.
-
-The decoder mirrors the encoder's structure,
-progressively restoring the spatial dimensions of the feature maps back to the original input resolution.
-Upsampling is performed at each decoder stage using transposed convolutions or bilinear interpolation.
-Skip connections copy the high-resolution feature maps from the encoder stages
-and concatenate them directly with the corresponding upsampled features in the decoder.
-By concatenating these raw, high-resolution features directly back to the decoding layers,
-the network bypasses the deep bottlenecks and preserves fine-grained structural integrity,
-preventing the over-smoothing common in standard autoencoder structures.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.5\textwidth]{slides/Res_U-net.drawio.png}
-\end{figure}
-
-% TODO RESUNET:
-%  PARAGRAF ARHITECTURA
-%  PARAGRAF METODOLOGIE
-%  PARAGRAF DISCUTIE REZULTATE
-%  PARAGRAF ULTIMA VARIANTA ANTRENATA
-%  !! NU UITA (mai sus) TABEL CU REZULTATE PT FIECARE LOSS FUNCTION
+% WRITE HERE
 
 \subsection{Uformer}
 
@@ -455,21 +474,6 @@ specifically constructed for real-world denoising, suggesting that its
 denoising-oriented pretraining transfers well even when blur is
 introduced alongside noise.
 
-\begin{table}[tb]
-  \centering
-  \begin{tabular}{llcc}
-    \hline
-    \textbf{Method} & \textbf{Arch. Category} & \textbf{PSNR (dB)} & \textbf{MSE} \\
-    \hline
-    \hline
-    Bilateral + R-Lucy & Analytical      & 25.96 & - \\
-    DnCNN (MSE)        & Linear CNN      & 28.98 & 0.0019 \\
-    ResUNet (MAE+SSIM) & Multi-scale CNN & 29.22 & 0.0019 \\
-    Uformer            & Vision T-former & 22.95 & 0.0057 \\
-    Restormer          & Vision T-former & 26.72 & 0.0033 \\
-    \hline
-  \end{tabular}%
-\end{table}
 
 %===================================================================================================
 % CONCLUSIONS
