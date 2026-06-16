@@ -227,7 +227,15 @@ variant of the degradation conditions.
 
 \subsection{DnCNN}
 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{slides/dncnn.drawio.png}
+    \caption{DnCNN Arhitecture}
+    \label{fig:dncnn}
+\end{figure}
+
 The DnCNN architecture follows the design of~\cite{beyond_a_gaussian},
+as shown in figure \ref{fig:dncnn},
 consisting of 17 convolutional layers with $3 \times 3$ filters and 64 feature
 maps throughout. The first layer is a plain convolution followed by ReLU
 activation, the intermediate 15 layers each combine convolution, batch
@@ -250,6 +258,45 @@ per variant, on a system equipped with an NVIDIA GTX 980 (4\,GiB VRAM),
 an Intel Core i5-6600 CPU, and 16\,GiB of system RAM.
 
 \subsection{ResUNet}
+
+The ResUNet architecture, as shown in figure \ref{fig:resunet} is a hybrid deep learning model that integrates the U-Net arhitecture
+with the optimization benefits of residual learning and residual blocks.
+Originally designed for semantic segmentation (U-Net),
+this architecture has proven highly effective for pixel-level image-to-image translation tasks,
+including joint image denoising and deblurring.
+The classic U-Net framework relies on a symmetric encoder path to capture global contextual information
+and an expanding decoder path to enable precise spatial reconstruction.
+ResUNet enhances this by replacing standard sequential convolutional layers within the encoder and decoder blocks with residual blocks.
+This modification addresses the vanishing gradient problem inherent in very deep neural networks,
+enabling stable training of deeper architectures and accelerating overall convergence.
+
+The output $H(x)$ of a residual unit is defined as:
+
+$$
+H(x) = F(x) + x
+$$
+
+where $x$ represents the input tensor to the block,
+and $F(x)$ denotes the residual mapping learned.
+Instead of forcing the network parameters to fit an entirely new underlying mapping,
+the convolutional layers are only required to learn the residual difference $F(x) = H(x) - x$.
+
+The decoder mirrors the encoder's structure,
+progressively restoring the spatial dimensions of the feature maps back to the original input resolution.
+Upsampling is performed at each decoder stage using transposed convolutions or bilinear interpolation.
+Skip connections copy the high-resolution feature maps from the encoder stages
+and concatenate them directly with the corresponding upsampled features in the decoder.
+By concatenating these raw, high-resolution features directly back to the decoding layers,
+the network bypasses the deep bottlenecks and preserves fine-grained structural integrity,
+preventing the over-smoothing common in standard autoencoder structures.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{slides/Res_U-net.drawio.png}
+    \caption{ResUNet Arhitecture}
+    \label{fig:resunet}
+\end{figure}
+
 
 \subsection{Uformer}
 
@@ -290,6 +337,88 @@ Pretrained weights trained on the SIDD dataset, a benchmark widely used for
 real-world image denoising, were used to initialise the model. Evaluation was
 performed on the 20\% validation split of the 7th variant of the Flickr2K
 dataset, consistent with the held-out portion used for the other models.
+
+\subsection{Loss Functions and Evaluation Metrics}
+
+Selecting appropriate loss functions and evaluation metrics is critical
+for training and assessing image restoration models.
+This section details the mathematical foundations and practical utility of each indicator used in our experiments.
+
+\subsubsection{Loss Functions}
+
+The loss function guides the optimization of the neural network parameters during training.
+We evaluated both standard functions and hybrid formulations.
+
+Mean Absolute Error (MAE / L1 Loss) penalizes the pixel-wise differences between the restored image ($\hat{x}$)
+and the ground-truth reference image ($x$) linearly,
+
+$$
+L_{MAE} = \frac{1}{N} \sum_{i=1}^{N} |x_i - \hat{x}_i|
+$$
+
+where $N$ represents the total number of pixels in the image.
+
+MAE is robust to outliers and preserves high-frequency details (such as edges and sharp contrast transitions),
+as it does not disproportionately penalize large isolated errors.\cite{zhao2016loss}
+
+Mean Squared Error (MSE / L2 Loss) penalizes pixel-wise differences quadratically,
+
+$$
+L_{MSE} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{x}_i)^2
+$$
+
+MSE is highly sensitive to larger errors. This forces the network to minimize extreme deviations but frequently leads to over-smoothing.\cite{zhao2016loss}
+
+To leverage the edge-preservation of MAE while incorporating human visual perception,
+we evaluated two hybrid loss functions:
+
+First one is MAE combined with MSE, this combination utilizes the stability of MAE for structural boundaries,
+while the MSE component assists in accelerating overall error variance reduction.
+
+$$
+L_{Hybrid1} = 0.8 \cdot L_{MAE} + 0.2 \cdot L_{MSE}
+$$
+
+Second one is MAE combined with SSIM, by directly integrating the structural dissimilarity term ($\text{SSIM}$),
+the network is penalized for distorting geometric structures and texture patterns,
+moving optimization beyond pixel-to-pixel intensity matching.
+
+$$
+L_{Hybrid2} = 0.8 \cdot L_{MAE} + 0.2 \cdot (1 - \text{SSIM}(x, \hat{x}))
+$$
+
+Structural Similarity Index Measure (SSIM) is a perception-based metric that quantifies image degradation as changes in perceived structural information.
+It compares three distinct components between the target image $x$ and the reference image $y$:
+luminance ($l$), contrast ($c$), and structure ($s$).\cite{wang2004image}
+
+The complete SSIM formula for images $x$ and $y$ is:
+
+$$
+\text{SSIM}(x, y) = \frac{(2\mu_x\mu_y + c_1)(2\sigma_{xy} + c_2)}{(\mu_x^2 + \mu_y^2 + c_1)(\sigma_x^2 + \sigma_y^2 + c_2)}
+$$
+
+where $c_1 = (k_1 L)^2$ and $c_2 = (k_2 L)^2$ are stabilization constants, where $L$ is the dynamic range of pixel values ($255$), $k_1 = 0.01$, and $k_2 = 0.03$.
+
+SSIM values range between $[-1, 1]$, where $1$ indicates absolute identity.
+SSIM correlates significantly better with human qualitative judgment than PSNR,
+as it successfully penalizes geometric and structural distortions.
+
+\subsubsection{Evaluation Metric}
+
+Peak Signal-to-Noise Ratio (PSNR) measures the ratio between the maximum possible power of a signal
+and the power of corrupting noise (represented by the MSE).
+It is expressed on a logarithmic decibel (dB) scale:
+
+$$
+\text{PSNR} = 10 \cdot \log_{10} \left( \frac{MAX_I^2}{\text{MSE}} \right)
+$$
+
+where $MAX_I$ is the maximum possible pixel value
+(e.g., $255$ for 8-bit images or $1.0$ for normalized float representations).
+
+PSNR does not always align with human visual judgment
+because it treats all pixel-wise errors equally,
+regardless of their spatial structure. \cite{girod1993s}
 
 %===================================================================================================
 % Experiments and Results
@@ -382,44 +511,8 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
   }
 \end{table}
 
-The ResUNet architecture is a hybrid deep learning model that integrates the U-Net arhitecture
-with the optimization benefits of residual learning and residual blocks.
-Originally designed for semantic segmentation (U-Net),
-this architecture has proven highly effective for pixel-level image-to-image translation tasks,
-including joint image denoising and deblurring.
-The classic U-Net framework relies on a symmetric encoder path to capture global contextual information
-and an expanding decoder path to enable precise spatial reconstruction.
-ResUNet enhances this by replacing standard sequential convolutional layers within the encoder and decoder blocks with residual blocks.
-This modification addresses the vanishing gradient problem inherent in very deep neural networks,
-enabling stable training of deeper architectures and accelerating overall convergence.
-
-The output $H(x)$ of a residual unit is defined as:
-
-$$
-H(x) = F(x) + x
-$$
-
-where $x$ represents the input tensor to the block,
-and $F(x)$ denotes the residual mapping learned.
-Instead of forcing the network parameters to fit an entirely new underlying mapping,
-the convolutional layers are only required to learn the residual difference $F(x) = H(x) - x$.
-
-The decoder mirrors the encoder's structure,
-progressively restoring the spatial dimensions of the feature maps back to the original input resolution.
-Upsampling is performed at each decoder stage using transposed convolutions or bilinear interpolation.
-Skip connections copy the high-resolution feature maps from the encoder stages
-and concatenate them directly with the corresponding upsampled features in the decoder.
-By concatenating these raw, high-resolution features directly back to the decoding layers,
-the network bypasses the deep bottlenecks and preserves fine-grained structural integrity,
-preventing the over-smoothing common in standard autoencoder structures.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.5\textwidth]{slides/Res_U-net.drawio.png}
-\end{figure}
 
 % TODO RESUNET:
-%  PARAGRAF ARHITECTURA
 %  PARAGRAF METODOLOGIE
 %  PARAGRAF DISCUTIE REZULTATE
 %  PARAGRAF ULTIMA VARIANTA ANTRENATA
@@ -477,6 +570,14 @@ introduced alongside noise.
 \section{Conclusions}
 
 % TODO: CONCLUSIONS
+
+%===================================================================================================
+% BILBIOGRAPHY
+%===================================================================================================
+\clearpage
+\twocolumn
+\bibliographystyle{IEEEtran}
+\bibliography{references.bib}
 
 %===================================================================================================
 % APPENDIX
@@ -671,13 +772,6 @@ anomalies as discussed in Section~\ref{sec:experiments}.
   \label{fig:ds6_resunet_final}
 \end{figure}
 
-%===================================================================================================
-% BILBIOGRAPHY
-%===================================================================================================
-\clearpage
-\twocolumn
-\bibliographystyle{IEEEtran}
-\bibliography{references.bib}
 
 % COLUMN FITTING FIGURE
 % \begin{figure}[!t]
