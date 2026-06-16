@@ -461,7 +461,6 @@ regardless of their spatial structure. \cite{girod1993s}
 \begin{table}[tb]
   \centering
   \caption{Average evaluation results for all methods}
-  \label{tab:all_methods}
   \begin{tabular}{llcc}
     \hline
     \textbf{Method} & \textbf{Arch. Category} & \textbf{PSNR (dB)} & \textbf{MSE} \\
@@ -492,8 +491,8 @@ model complexity and training supervision.
 
 \subsection{Analytical Method}
 
-For comparative baseline analysis, the classical analytical method, 
-comprising Bilateral Filtering and Richardson-Lucy deconvolution, 
+For comparative baseline analysis, the classical analytical method,
+comprising Bilateral Filtering and Richardson-Lucy deconvolution,
 yields a competitive performance with a PSNR of $25.9\text{ dB}$.
 While these quantitative results are relatively robust,
 the classical approach operates as a non-blind restoration framework.
@@ -579,27 +578,27 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
   }
 \end{table}
 
-We evaluated the ResUNet model using a 5-fold cross-validation scheme on a subset of 100 images
-to test three different loss configurations.
+The ResUNet model was evaluated using three loss function configurations
+on the mixed-degradation variant (blur $\sigma_b = 10$, noise $\sigma_n =
+15$), with results summarised in Table~\ref{tab:resunet_results_summary}.
+Training with pure MSE loss yielded an average PSNR of 28.39 dB and an
+MSE of 0.0021, representing an improvement of approximately 6.3 dB over
+the degraded input PSNR of 22.07 dB for this variant. The combined
+MAE+MSE loss achieved the highest PSNR of the three configurations at
+28.54 dB, marginally outperforming pure MSE, while the MAE+SSIM hybrid
+achieved a comparable PSNR of 28.45 dB with a slightly higher MSE of
+0.0021.
 
-As shown in Table \ref{tab:resunet_results_summary}, the quantitative results are numerically close.
-However, the visual effects on the restored images are qualitatively distinct,
-as discussed in the previous section.
-
-Consequently, selecting the optimal optimization objective depends directly on the specific requirements of the application.
-For metric-focused applications, opting for MSE is appropriate when the primary goal is minimizing the global mean error,
-but for perception-focused applications, hybrid formulations based on MAE and SSIM are superior when the priority is preserving fine textures, local contrast, and sharp geometric boundaries.
-
-Following the initial validation phase, we executed a complete training run on the entire mixed dataset.
-For this training, the ResUNet model was optimized using the hybrid loss function $L_{MAE} + L_{SSIM}$,
-which previously demonstrated the most balanced restoration characteristics.
-
-Upon completion, the fully trained ResUNet model achieved a PSNR of $29.22\text{ dB}$ and a MSE of $0.0019$.
-As compiled in Table \ref{tab:all_methods}, these metrics represent a small performance improvement over the DnCNN baseline.
-
-In addition to the superior quantitative metrics, the model trained with the hybrid loss function produced visually superior reconstructions.
-The restored images exhibit well-preserved structural details, sharper edge definition, and minimal artifact propagation.
-A representative prediction example on an individual image tile is illustrated in Figure \ref{fig:duck_tile}, highlighting the localized restoration performance of the proposed model.
+The narrow spread in PSNR across all three loss configurations (within
+0.15 dB of one another) indicates that ResUNet's residual and skip
+connection design is robust to the choice of loss function for this
+degradation level, with all variants comfortably outperforming both the
+degraded baseline and the DnCNN cross-validation result of 24.73 dB on
+the same variant. While the MAE+MSE configuration attained the highest
+raw PSNR, the inclusion of the SSIM term in the MAE+SSIM configuration is
+expected to better preserve perceptual and structural quality despite the
+marginal reduction in PSNR, consistent with the known tendency of pure
+pixel-wise losses to favour intensity accuracy over structural fidelity.
 
 \subsection{Uformer}
 
@@ -635,15 +634,47 @@ introduced alongside noise.
 %===================================================================================================
 % CONCLUSIONS
 %===================================================================================================
+\clearpage
 \section{Conclusions}
 
-% TODO: CONCLUSIONS
+This project demonstrated that convolutional architectures such as DnCNN
+and ResUNet are well-suited to handling denoising and deblurring
+simultaneously, even under the hardware constraints faced during
+training. Both models were able to recover meaningful structural detail
+from the degraded inputs across all seven dataset variants, with ResUNet
+generally outperforming DnCNN, likely due to its multi-scale residual
+design and use of skip connections.
+
+The choice of loss function also had a noticeable effect on output
+quality. Optimising purely for MSE achieves good pixel-level accuracy but
+tends to over-smooth the resulting image, reducing perceptual quality.
+Incorporating SSIM into the loss function helped address this, as it
+penalises structural and textural distortion directly rather than relying
+solely on pixel-wise error. While the resulting PSNR values were similar
+across the different loss configurations tested, the SSIM-based loss is
+likely the better choice when perceptual fidelity is a priority over raw
+PSNR.
+
+We also evaluated Uformer and Restormer using their pretrained weights,
+without further fine-tuning, to provide a point of comparison against
+larger transformer-based architectures. Restormer performed
+particularly well on the mixed-degradation variant despite being
+pretrained specifically for denoising, suggesting that its architecture
+generalises reasonably well to compound degradations. This supports the
+broader trend in the field, where larger and more complex models tend
+to achieve stronger results, but typically require significantly more
+compute and training data than was available for this project.
+
+For future work, measuring inference time alongside restoration quality
+would help clarify how practical each architecture is for real-time use
+cases. It would also be worth testing these models on real-world
+degraded images rather than synthetically generated blur and noise, to
+better assess how well the results generalise beyond a controlled
+experimental setting.
 
 %===================================================================================================
 % BILBIOGRAPHY
 %===================================================================================================
-\clearpage
-\twocolumn
 \bibliographystyle{IEEEtran}
 \bibliography{references.bib}
 
