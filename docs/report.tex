@@ -314,6 +314,42 @@ Figure~\ref{fig:ds6_dncnn_final} of the Appendices.
   \label{tab:resunet_results_summary}
 \end{table}
 
+The ResUNet architecture is a hybrid deep learning model that integrates the U-Net arhitecture
+with the optimization benefits of residual learning and residual blocks.
+Originally designed for semantic segmentation (U-Net),
+this architecture has proven highly effective for pixel-level image-to-image translation tasks,
+including joint image denoising and deblurring.
+The classic U-Net framework relies on a symmetric encoder path to capture global contextual information
+and an expanding decoder path to enable precise spatial reconstruction.
+ResUNet enhances this by replacing standard sequential convolutional layers within the encoder and decoder blocks with residual blocks.
+This modification addresses the vanishing gradient problem inherent in very deep neural networks,
+enabling stable training of deeper architectures and accelerating overall convergence.
+
+The output $H(x)$ of a residual unit is defined as:
+
+$$
+H(x) = F(x) + x
+$$
+
+where $x$ represents the input tensor to the block,
+and $F(x)$ denotes the residual mapping learned.
+Instead of forcing the network parameters to fit an entirely new underlying mapping,
+the convolutional layers are only required to learn the residual difference $F(x) = H(x) - x$.
+
+The decoder mirrors the encoder's structure,
+progressively restoring the spatial dimensions of the feature maps back to the original input resolution.
+Upsampling is performed at each decoder stage using transposed convolutions or bilinear interpolation.
+Skip connections copy the high-resolution feature maps from the encoder stages
+and concatenate them directly with the corresponding upsampled features in the decoder.
+By concatenating these raw, high-resolution features directly back to the decoding layers,
+the network bypasses the deep bottlenecks and preserves fine-grained structural integrity,
+preventing the over-smoothing common in standard autoencoder structures.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{slides/Res_U-net.drawio.png}
+\end{figure}
+
 % TODO RESUNET:
 %  PARAGRAF ARHITECTURA
 %  PARAGRAF METODOLOGIE
